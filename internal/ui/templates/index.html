@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOMERUN² · Archive</title>
+    <script>
+        // In homerun2-portal's iframe the portal shows the brand: compact header.
+        if (window.self !== window.top) document.documentElement.classList.add('hr-embedded');
+    </script>
+    <link rel="icon" type="image/png" href="{{.BasePath}}/static/favicon.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <script src="{{.BasePath}}/static/htmx.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* homerun2 design tokens (copy of homerun2-portal's); the portal's own
+           file, linked below when served through it, wins. */
+        :where(:root) {
+            --hr-bg: #0b1120; --hr-surface: #111827; --hr-card: #1e293b; --hr-border: #334155;
+            --hr-text: #e2e8f0; --hr-muted: #94a3b8; --hr-accent: #6366f1; --hr-accent-2: #a855f7;
+            --hr-accent-3: #f97316; --hr-ok: #22c55e; --hr-info: #38bdf8; --hr-warning: #eab308; --hr-error: #ef4444;
+        }
+        :root { --pico-font-size: 14px; }
+        html, body { background: var(--hr-bg); min-height: 100vh; }
+        .header-bar { background: linear-gradient(135deg, var(--hr-accent) 0%, var(--hr-accent-2) 100%); color: #f8fafc; padding: 1.8rem 1.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid var(--hr-accent-3); }
+        .header-bar h1 { margin: 0; font-family: 'Press Start 2P', cursive; font-size: 2.2rem; color: #fff; letter-spacing: 0.08em; text-shadow: 3px 3px 0 rgba(0,0,0,0.3); }
+        .header-bar .subtitle { font-family: 'Press Start 2P', cursive; font-size: 0.7rem; color: #fbbf24; margin-top: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; }
+        .hr-embedded .header-bar { font-family: var(--hr-font, system-ui, sans-serif); background: var(--hr-surface); border-bottom: 1px solid var(--hr-border); min-height: 44px; padding: 6px 16px; align-items: center; }
+        .hr-embedded .header-bar h1 { display: none; }
+        .hr-embedded .header-bar .subtitle { font-family: inherit; font-size: 13px; color: var(--hr-muted); margin: 0; letter-spacing: normal; text-transform: none; }
+        nav.tabs { display: flex; justify-content: flex-start; gap: 0.25rem; border-bottom: 1px solid var(--hr-border); margin-bottom: 1rem; }
+        nav.tabs a { padding: 0.5rem 1rem; color: var(--hr-muted); text-decoration: none; border-bottom: 2px solid transparent; }
+        nav.tabs a.active { color: var(--hr-text); border-bottom-color: var(--hr-accent); }
+        .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+        .card { background: var(--hr-card); border: 1px solid var(--hr-border); border-radius: 0.5rem; padding: 0.75rem 1rem; }
+        .card .label { color: var(--hr-muted); font-size: 0.75rem; text-transform: uppercase; }
+        .card .value { font-size: 1.4rem; font-weight: bold; }
+        .ok { color: var(--hr-ok); } .warn { color: var(--hr-warning); } .err { color: var(--hr-error); } .muted { color: var(--hr-muted); }
+        table { font-size: 0.85rem; }
+        thead th { background: var(--hr-card); color: #818cf8; text-transform: uppercase; }
+        td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+        td.zero { color: #475569; }
+        pre.json { background: var(--hr-card); border: 1px solid var(--hr-border); padding: 1rem; font-size: 0.8rem; max-height: 70vh; overflow: auto; }
+        .report { background: var(--hr-card); border: 1px solid var(--hr-border); padding: 1rem 1.5rem; border-radius: 0.5rem; }
+        .build-footer { background: var(--hr-card); color: #475569; padding: 0.6rem 1.5rem; margin-top: 1rem; display: flex; gap: 1.5rem; font-size: 0.75rem; border-top: 1px solid var(--hr-border); }
+        .build-footer .value { color: #818cf8; }
+    </style>
+    {{if .PortalTheme}}<link rel="stylesheet" href="/static/homerun2-tokens.css">{{end}}
+</head>
+<body>
+    <div class="header-bar">
+        <div>
+            <a href="{{.BasePath}}/" style="text-decoration:none;color:inherit">
+                <h1>HOMERUN²</h1>
+                <div class="subtitle">Archive · {{.Bucket}}</div>
+            </a>
+        </div>
+    </div>
+    <main class="container-fluid">
+        <nav class="tabs">
+            {{range .Tabs}}
+            <a href="{{$.BasePath}}/?tab={{.ID}}" class="{{if eq .ID $.Tab}}active{{end}}"
+               hx-get="{{$.BasePath}}/ui/{{.ID}}" hx-target="#panel" hx-push-url="{{$.BasePath}}/?tab={{.ID}}"
+               onclick="document.querySelectorAll('nav.tabs a').forEach(a=>a.classList.remove('active'));this.classList.add('active')">{{.Title}}</a>
+            {{end}}
+        </nav>
+        <div id="panel" hx-get="{{.BasePath}}/ui/{{.Tab}}" hx-trigger="load"></div>
+    </main>
+    <div class="build-footer">
+        <div><span>version</span> <span class="value">{{.Version}}</span></div>
+        <div><span>commit</span> <span class="value">{{shortCommit .Commit}}</span></div>
+        <div><span>built</span> <span class="value">{{.Date}}</span></div>
+    </div>
+</body>
+</html>

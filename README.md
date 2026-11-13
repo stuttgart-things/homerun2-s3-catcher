@@ -75,10 +75,28 @@ WHERE system = 'k8s-labda' AND date >= '2026-11-01';
 | `SYSTEMS` | *(all)* | Comma-separated systems to archive |
 | `MAX_LAG` | `12h` | `0` disables the check |
 | `LAG_INTERVAL` | `1m` | |
-| `HEALTH_PORT` | `8080` | `/healthz`, `/health` |
+| `HEALTH_PORT` | `8080` | UI and `/healthz`, `/health` |
+| `BASE_PATH` | *(root)* | UI prefix behind sthings-portal, e.g. `/archive`; `/health(z)` stay at the root |
+| `ANALYSIS_BUCKET` | *(none)* | Bucket of the cluster-analysis reports (`analysis/…md/json`) for the Analyses tab |
+| `ANALYSIS_S3_ACCESS_KEY` / `ANALYSIS_S3_SECRET_KEY` | the archive's | Credentials for `ANALYSIS_BUCKET` |
+| `INVENTORY_INTERVAL` | `5m` | How often the UI lists the bucket |
+| `INVENTORY_DAYS` | `14` | Days in the Uploads table (1–90) |
 | `LOG_FORMAT` / `LOG_LEVEL` | `json` / `info` | |
 
 Startup waits for Redis and up to 2 minutes for the bucket, then exits. `/healthz` returns status, counters (`archived`, `skipped`, `missing`, `invalid`, `failed`, `lastArchived`) and the lag per stream. `degraded` is still HTTP 200, so probes do not restart a catcher that is merely behind; alert on the status instead.
+
+## UI
+
+Read-only, served on `HEALTH_PORT` (under `BASE_PATH`), htmx and the homerun2 theme like the other catchers; inside sthings-portal it switches to the compact header and the portal's tokens (#7).
+
+| Tab | Shows | From |
+|---|---|---|
+| **Status** | health, counters, lag per stream against `MAX_LAG`, the last 50 uploads | live, since the start |
+| **Uploads** | objects (and bytes on hover) per system and day, the last `INVENTORY_DAYS` days, totals | bucket listing every `INVENTORY_INTERVAL` |
+| **Objects** | the latest 50 objects; click shows the JSON | bucket listing |
+| **Analyses** | the reports under `analysis/` in `ANALYSIS_BUCKET`, Markdown rendered (raw HTML dropped) or JSON | analysis bucket |
+
+For homerun2-portal's overview it serves `/ui/manifest.json` with one fragment, `/ui/fragment/status` (status, archived, last upload, max lag).
 
 ## Deployment
 

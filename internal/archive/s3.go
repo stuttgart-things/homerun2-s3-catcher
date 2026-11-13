@@ -5,7 +5,9 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -54,6 +56,42 @@ func (s *S3Store) Put(ctx context.Context, key string, body []byte) error {
 		minio.PutObjectOptions{ContentType: "application/json"})
 	return err
 }
+
+// Object is one entry of a bucket listing.
+type Object struct {
+	Key          string
+	Size         int64
+	LastModified time.Time
+}
+
+// List returns every object under prefix.
+func (s *S3Store) List(ctx context.Context, prefix string) ([]Object, error) {
+	var out []Object
+	for o := range s.client.ListObjects(ctx, s.bucket, minio.ListObjectsOptions{Prefix: prefix, Recursive: true}) {
+		if o.Err != nil {
+			return nil, fmt.Errorf("list %s/%s: %w", s.bucket, prefix, o.Err)
+		}
+		out = append(out, Object{Key: o.Key, Size: o.Size, LastModified: o.LastModified})
+	}
+	return out, nil
+}
+
+// Get returns the object under key, at most max bytes.
+func (s *S3Store) Get(ctx context.Context, key string, maxBytes int64) ([]byte, error) {
+	obj, err := s.client.GetObject(ctx, s.bucket, key, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("get %s: %w", key, err)
+	}
+	defer func() { _ = obj.Close() }()
+	b, err := io.ReadAll(io.LimitReader(obj, maxBytes))
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", key, err)
+	}
+	return b, nil
+}
+
+// Bucket is the bucket's name.
+func (s *S3Store) Bucket() string { return s.bucket }
 
 // EnsureBucket checks that the bucket exists, and creates it if create is set.
 func (s *S3Store) EnsureBucket(ctx context.Context, create bool) error {

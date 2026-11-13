@@ -1,0 +1,14 @@
+{{if not .Inv.HasAnalyses}}
+<p class="muted">No analysis bucket configured (ANALYSIS_BUCKET). The reports of homerun2-ai-pitcher's <code>cluster-analysis</code> appear here once it is.</p>
+{{else}}{{with .Inv}}
+{{if .AnalysisErr}}<p class="err">Listing failed: {{.AnalysisErr}}</p>{{end}}
+<table>
+    <thead><tr><th>Modified</th><th class="num">Size</th><th>Report</th></tr></thead>
+    <tbody>
+    {{range .Analyses}}
+    <tr><td>{{.LastModified.UTC.Format "2006-01-02 15:04"}}</td><td class="num">{{bytes64 .Size}}</td>
+        <td><a href="#" hx-get="{{$.BasePath}}/ui/analysis?key={{urlquery .Key}}" hx-target="#panel">{{.Key}}</a></td></tr>
+    {{else}}<tr><td colspan="3" class="muted">No analyses yet.</td></tr>{{end}}
+    </tbody>
+</table>
+{{end}}{{end}}

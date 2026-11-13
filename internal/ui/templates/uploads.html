@@ -1,0 +1,16 @@
+{{with .Inv}}
+<p class="muted">Bucket listing, refreshed {{if .RefreshedAt.IsZero}}not yet{{else}}{{ago .RefreshedAt}}{{end}} · {{.Objects}} objects, {{bytes64 .Bytes}} in total{{if .UnknownCount}} · {{.UnknownCount}} keys without system/date{{end}}{{if .Err}} · <span class="err">last refresh failed: {{.Err}}</span>{{end}}</p>
+<div style="overflow-x:auto">
+<table>
+    <thead><tr><th>System</th>{{range .Days}}<th class="num">{{slice . 5}}</th>{{end}}</tr></thead>
+    <tbody>
+    {{$cells := .Cells}}{{$days := .Days}}
+    {{range $sys := .Systems}}
+    <tr><td>{{$sys}}</td>
+        {{range $d := $days}}{{$c := index (index $cells $sys) $d}}<td class="num {{if eq $c.Objects 0}}zero{{end}}" title="{{bytes64 $c.Bytes}}">{{$c.Objects}}</td>{{end}}</tr>
+    {{else}}<tr><td class="muted">No objects in the last days.</td></tr>{{end}}
+    <tr><td><strong>total</strong></td>{{$tot := .DayTotals}}{{range $d := $days}}{{$c := index $tot $d}}<td class="num" title="{{bytes64 $c.Bytes}}"><strong>{{$c.Objects}}</strong><br><span class="muted">{{bytes64 $c.Bytes}}</span></td>{{end}}</tr>
+    </tbody>
+</table>
+</div>
+{{end}}

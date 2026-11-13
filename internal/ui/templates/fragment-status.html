@@ -1,0 +1,9 @@
+<div class="hr-fragment">
+  <div class="hr-kpis">
+    <div class="hr-kpi"><span class="hr-kpi-label">archive</span><span class="hr-kpi-value">{{.Status}}</span></div>
+    <div class="hr-kpi"><span class="hr-kpi-label">archived</span><span class="hr-kpi-value">{{.Archived}}</span></div>
+    <div class="hr-kpi"><span class="hr-kpi-label">last upload</span><span class="hr-kpi-value">{{if .LastArchived.IsZero}}—{{else}}{{ago .LastArchived}}{{end}}</span></div>
+    <div class="hr-kpi"><span class="hr-kpi-label">max lag</span><span class="hr-kpi-value">{{.MaxAge}}</span></div>
+  </div>
+  <a class="hr-link" href="{{.BasePath}}/">open archive</a>
+</div>

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +38,17 @@ type Config struct {
 	LagInterval time.Duration
 
 	HealthPort string
+
+	// BasePath is the UI's URL prefix behind sthings-portal, e.g. /archive;
+	// empty serves it at the root. /health and /healthz stay at the root.
+	BasePath string
+	// Analysis is the optional bucket of the cluster-analysis reports, shown
+	// in the UI; its credentials default to the archive's.
+	Analysis S3Config
+	// InventoryInterval is how often the UI's bucket listing is refreshed,
+	// InventoryDays how many days its per-day table shows.
+	InventoryInterval time.Duration
+	InventoryDays     int
 }
 
 // S3Config addresses the bucket.
@@ -59,6 +71,8 @@ const (
 	DefaultVisibilityTimeout = time.Minute
 	DefaultMaxLag            = 12 * time.Hour
 	DefaultLagInterval       = time.Minute
+	DefaultInventoryInterval = 5 * time.Minute
+	DefaultInventoryDays     = 14
 )
 
 // Load reads the configuration from the environment.
@@ -96,6 +110,7 @@ func load(getenv func(string) string) (Config, error) {
 		Systems:     ParseList(getenv("SYSTEMS")),
 		HealthPort:  get("HEALTH_PORT", "8080"),
 	}
+
 	if len(c.Streams) == 0 {
 		c.Streams = []string{c.Redis.Stream}
 	}
@@ -119,6 +134,9 @@ func load(getenv func(string) string) (Config, error) {
 	if c.LagInterval, err = parseDuration("LAG_INTERVAL", getenv("LAG_INTERVAL"), DefaultLagInterval); err != nil {
 		return c, err
 	}
+	if uiErr := loadUI(&c, getenv); uiErr != nil {
+		return c, uiErr
+	}
 
 	if c.S3.Endpoint == "" {
 		return c, fmt.Errorf("S3_ENDPOINT is required")
@@ -136,6 +154,49 @@ func load(getenv func(string) string) (Config, error) {
 		return c, fmt.Errorf("LAG_INTERVAL must be positive")
 	}
 	return c, nil
+}
+
+// loadUI reads the UI's settings: base path, analysis bucket, inventory.
+func loadUI(c *Config, getenv func(string) string) error {
+	c.Analysis = c.S3
+	c.Analysis.Bucket = getenv("ANALYSIS_BUCKET")
+	c.Analysis.CreateBucket = false
+	if v := getenv("ANALYSIS_S3_ACCESS_KEY"); v != "" {
+		c.Analysis.AccessKey = v
+		c.Analysis.SecretKey = getenv("ANALYSIS_S3_SECRET_KEY")
+	}
+	var err error
+	if c.InventoryInterval, err = parseDuration("INVENTORY_INTERVAL", getenv("INVENTORY_INTERVAL"), DefaultInventoryInterval); err != nil {
+		return err
+	}
+	if c.InventoryInterval <= 0 {
+		return fmt.Errorf("INVENTORY_INTERVAL must be positive")
+	}
+	c.InventoryDays = DefaultInventoryDays
+	if v := strings.TrimSpace(getenv("INVENTORY_DAYS")); v != "" {
+		if c.InventoryDays, err = strconv.Atoi(v); err != nil || c.InventoryDays < 1 || c.InventoryDays > 90 {
+			return fmt.Errorf("invalid INVENTORY_DAYS %q: 1 to 90", v)
+		}
+	}
+	c.BasePath, err = ParseBasePath(getenv("BASE_PATH"))
+	return err
+}
+
+var basePathSegment = regexp.MustCompile(`^[A-Za-z0-9._~-]+$`)
+
+// ParseBasePath normalises BASE_PATH to "/a/b" ("" and "/" become ""). Only
+// plain segments: the value is written into the page.
+func ParseBasePath(s string) (string, error) {
+	trimmed := strings.Trim(strings.TrimSpace(s), "/")
+	if trimmed == "" {
+		return "", nil
+	}
+	for _, seg := range strings.Split(trimmed, "/") {
+		if !basePathSegment.MatchString(seg) || seg == "." || seg == ".." {
+			return "", fmt.Errorf("invalid BASE_PATH %q: segment %q", s, seg)
+		}
+	}
+	return "/" + trimmed, nil
 }
 
 // ParseList splits a comma-separated value, dropping empty items.

@@ -34,6 +34,10 @@ configMap = {
             SYSTEMS: config.systems
         MAX_LAG: config.maxLag
         HEALTH_PORT: str(config.healthPort)
+        if config.basePath:
+            BASE_PATH: config.basePath
+        if config.analysisBucket:
+            ANALYSIS_BUCKET: config.analysisBucket
         **config.extraEnvVars
     }
 }

@@ -30,7 +30,9 @@ lag monitor ── oldest unarchived entry per stream ──► /healthz (degrad
 - `internal/archive/` — key template, record envelope, `ErrInvalid`, S3 store (`s3.go`)
 - `internal/catcher/` — redisqueue consumer; `handle` decides ack (nil) vs. redelivery (error)
 - `internal/lag/` — age of the oldest unarchived entry (pending or undelivered)
-- `internal/handlers/` — `/healthz` with counters and lag
+- `internal/handlers/` — `/healthz` with counters and lag, `Mount` (BASE_PATH, health at the root)
+- `internal/inventory/` — periodic bucket listing for the UI: objects/bytes per system and day, latest objects, analyses
+- `internal/ui/` — read-only web UI (htmx, embedded templates/static): status, uploads, objects, analyses; portal manifest + fragment
 - `kcl/` — Deployment, ConfigMap, Secrets (Redis, S3 or existing Secret), Service
 
 ## Git Workflow

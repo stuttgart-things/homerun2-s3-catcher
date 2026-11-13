@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"regexp"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -36,6 +37,41 @@ type Stats struct {
 	Invalid  atomic.Int64 // can never be archived
 	Failed   atomic.Int64 // failed attempts, delivered again later
 	lastUnix atomic.Int64
+
+	mu     sync.Mutex
+	recent []Upload // newest last, at most recentMax
+}
+
+// Upload is one archived message, for the UI.
+type Upload struct {
+	Key    string
+	System string
+	Stream string
+	Bytes  int
+	At     time.Time
+}
+
+// recentMax bounds the uploads Stats keeps for the UI.
+const recentMax = 50
+
+func (s *Stats) record(u Upload) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.recent = append(s.recent, u)
+	if len(s.recent) > recentMax {
+		s.recent = s.recent[len(s.recent)-recentMax:]
+	}
+}
+
+// Recent returns the latest uploads since start, newest first.
+func (s *Stats) Recent() []Upload {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]Upload, len(s.recent))
+	for i, u := range s.recent {
+		out[len(s.recent)-1-i] = u
+	}
+	return out
 }
 
 // LastArchived is the time of the last successful upload, zero if none.
@@ -177,7 +213,9 @@ func (c *Catcher) handle(msg *redisqueue.Message) error {
 	}
 
 	c.stats.Archived.Add(1)
-	c.stats.lastUnix.Store(time.Now().Unix())
+	now := time.Now()
+	c.stats.lastUnix.Store(now.Unix())
+	c.stats.record(Upload{Key: res.Key, System: res.System, Stream: msg.Stream, Bytes: res.Bytes, At: now.UTC()})
 	slog.Debug("message archived", "stream", msg.Stream, "id", msg.ID, "key", res.Key)
 	return nil
 }
