@@ -26,7 +26,7 @@ vars:
   LINT_REPORT_PATH: /tmp/lint-report-{{ .PROJECT }}.txt
   TEST_REPORT_PATH: /tmp/test-report-{{ .PROJECT }}.txt
   TARGET_IMAGE_REPO: ghcr.io/{{ .ORGA_NAME }}/{{ .PROJECT }}
-  DAGGER_KCL_MODULE: github.com/stuttgart-things/dagger/kcl@v0.138.0
+  DAGGER_KCL_MODULE: github.com/stuttgart-things/dagger/kcl@v0.139.0
   DAGGER_K8S_DEPLOY_MODULE: github.com/stuttgart-things/blueprints/kubernetes-deployment@v3.11.1
   KUBECONFIG_PATH: ~/.kube/movie-scripts
   DEPLOY_NAMESPACE: homerun2
@@ -130,7 +130,7 @@ tasks:
   run-redis-cli:
     desc: Run Redis CLI via Dagger
     cmds:
-      - dagger call -m github.com/stuttgart-things/dagger/homerun@v0.138.0 redis-cli terminal
+      - dagger call -m github.com/stuttgart-things/dagger/homerun@v0.139.0 redis-cli terminal
 
   run-redis-as-service:
     desc: Run Redis as service via Dagger
@@ -139,7 +139,7 @@ tasks:
       PASSWORD: mypass # pragma: allowlist secret
     cmds:
       - |
-        dagger call -m github.com/stuttgart-things/dagger/homerun@v0.138.0 \
+        dagger call -m github.com/stuttgart-things/dagger/homerun@v0.139.0 \
           run-redis --port {{ .PORT }} --password "{{ .PASSWORD }}" up
 
   # === KCL Manifest Rendering ===
