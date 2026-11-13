@@ -81,3 +81,26 @@ func TestLoadErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadUISettings(t *testing.T) {
+	c, err := load(env(map[string]string{
+		"S3_ENDPOINT": "minio:9000", "S3_BUCKET": "b", "S3_ACCESS_KEY": "a", "S3_SECRET_KEY": "s",
+		"BASE_PATH": "/archive/", "ANALYSIS_BUCKET": "k8s-cluster-analysis", "INVENTORY_DAYS": "7",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.BasePath != "/archive" || c.Analysis.Bucket != "k8s-cluster-analysis" || c.Analysis.AccessKey != "a" || c.InventoryDays != 7 || c.InventoryInterval != DefaultInventoryInterval {
+		t.Errorf("ui settings %+v / %+v", c.BasePath, c.Analysis)
+	}
+	c, _ = load(env(map[string]string{"S3_ENDPOINT": "m:9000", "S3_BUCKET": "b", "S3_ACCESS_KEY": "a",
+		"ANALYSIS_BUCKET": "x", "ANALYSIS_S3_ACCESS_KEY": "ra", "ANALYSIS_S3_SECRET_KEY": "rs"}))
+	if c.Analysis.AccessKey != "ra" || c.Analysis.SecretKey != "rs" || c.S3.AccessKey != "a" {
+		t.Errorf("analysis credentials %+v", c.Analysis)
+	}
+	for k, v := range map[string]string{"BASE_PATH": "/../x", "INVENTORY_DAYS": "0", "INVENTORY_INTERVAL": "never"} {
+		if _, err := load(env(map[string]string{"S3_ENDPOINT": "m:9000", "S3_BUCKET": "b", k: v})); err == nil {
+			t.Errorf("%s=%q accepted", k, v)
+		}
+	}
+}

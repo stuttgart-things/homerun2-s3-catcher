@@ -1,0 +1,12 @@
+{{with .Inv}}
+<p class="muted">The latest {{len .Latest}} objects of the bucket listing (refreshed {{if .RefreshedAt.IsZero}}not yet{{else}}{{ago .RefreshedAt}}{{end}}).</p>
+<table>
+    <thead><tr><th>Modified</th><th class="num">Size</th><th>Key</th></tr></thead>
+    <tbody>
+    {{range .Latest}}
+    <tr><td>{{.LastModified.UTC.Format "2006-01-02 15:04:05"}}</td><td class="num">{{bytes64 .Size}}</td>
+        <td><a href="#" hx-get="{{$.BasePath}}/ui/object?key={{urlquery .Key}}" hx-target="#panel">{{.Key}}</a></td></tr>
+    {{else}}<tr><td colspan="3" class="muted">No objects.</td></tr>{{end}}
+    </tbody>
+</table>
+{{end}}

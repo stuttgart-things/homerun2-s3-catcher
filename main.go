@@ -18,7 +18,9 @@ import (
 	"github.com/stuttgart-things/homerun2-s3-catcher/internal/catcher"
 	"github.com/stuttgart-things/homerun2-s3-catcher/internal/config"
 	"github.com/stuttgart-things/homerun2-s3-catcher/internal/handlers"
+	"github.com/stuttgart-things/homerun2-s3-catcher/internal/inventory"
 	"github.com/stuttgart-things/homerun2-s3-catcher/internal/lag"
+	"github.com/stuttgart-things/homerun2-s3-catcher/internal/ui"
 )
 
 // Build-time variables set via ldflags.
@@ -49,11 +51,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	store, err := archive.NewS3Store(archive.S3Options{
-		Endpoint: cfg.S3.Endpoint, Bucket: cfg.S3.Bucket, Region: cfg.S3.Region,
-		AccessKey: cfg.S3.AccessKey, SecretKey: cfg.S3.SecretKey,
-		UseSSL: cfg.S3.UseSSL, Insecure: cfg.S3.Insecure,
-	})
+	store, err := archive.NewS3Store(s3Options(cfg.S3))
 	if err != nil {
 		fail("invalid S3 configuration", err)
 	}
@@ -72,6 +70,25 @@ func main() {
 	stats := &catcher.Stats{}
 	monitor := lag.New(docsClient, cfg.ConsumerGroup, cfg.Streams, cfg.MaxLag)
 
+	// The UI's view of the buckets: the archive, and the analyses if a
+	// bucket for them is configured.
+	var analysisStore *archive.S3Store
+	if cfg.Analysis.Bucket != "" {
+		if analysisStore, err = archive.NewS3Store(s3Options(cfg.Analysis)); err != nil {
+			fail("invalid analysis S3 configuration", err)
+		}
+	}
+	var analysisLister inventory.Lister
+	var analysisGetter ui.Getter
+	if analysisStore != nil {
+		analysisLister, analysisGetter = analysisStore, analysisStore
+	}
+	inv := inventory.New(store, analysisLister, cfg.InventoryDays)
+	web := &ui.UI{
+		BasePath: cfg.BasePath, Bucket: cfg.S3.Bucket, Info: ui.BuildInfo{Version: version, Commit: commit, Date: date},
+		Stats: stats, Lag: monitor, Inv: inv, Archive: store, Analysis: analysisGetter, Started: time.Now(),
+	}
+
 	c, err := catcher.New(consumerClient, docsClient, archiver, stats, catcher.Options{
 		Streams:           cfg.Streams,
 		Group:             cfg.ConsumerGroup,
@@ -84,9 +101,10 @@ func main() {
 		fail("failed to create catcher", err)
 	}
 
-	go serveHTTP(cfg.HealthPort, handlers.NewHealthHandler(
+	go serveHTTP(cfg.HealthPort, cfg.BasePath, web.Handler(), handlers.NewHealthHandler(
 		handlers.BuildInfo{Version: version, Commit: commit, Date: date}, stats, monitor))
 	go monitor.Run(ctx, cfg.LagInterval)
+	go inv.Run(ctx, cfg.InventoryInterval)
 	go func() {
 		for err := range c.Errors() {
 			slog.Error("consumer error", "error", err)
@@ -159,12 +177,16 @@ func waitForBucket(ctx context.Context, store *archive.S3Store, create bool) {
 	}
 }
 
-func serveHTTP(port string, health http.HandlerFunc) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", health)
-	mux.HandleFunc("/healthz", health)
-	srv := &http.Server{Addr: ":" + port, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
-	slog.Info("http server starting", "port", port)
+func s3Options(c config.S3Config) archive.S3Options {
+	return archive.S3Options{
+		Endpoint: c.Endpoint, Bucket: c.Bucket, Region: c.Region,
+		AccessKey: c.AccessKey, SecretKey: c.SecretKey, UseSSL: c.UseSSL, Insecure: c.Insecure,
+	}
+}
+
+func serveHTTP(port, basePath string, app http.Handler, health http.HandlerFunc) {
+	srv := &http.Server{Addr: ":" + port, Handler: handlers.Mount(basePath, app, health), ReadHeaderTimeout: 10 * time.Second}
+	slog.Info("http server starting", "port", port, "base_path", basePath)
 	if err := srv.ListenAndServe(); err != nil {
 		slog.Error("http server error", "error", err)
 	}

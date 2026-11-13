@@ -1,0 +1,2 @@
+<p><a href="#" hx-get="{{.BasePath}}/ui/objects" hx-target="#panel">← objects</a> · <code>{{.Key}}</code></p>
+{{if .Error}}<p class="err">{{.Error}}</p>{{else}}<pre class="json">{{.Body}}</pre>{{if .Truncated}}<p class="warn">Truncated at {{bytes .Max}}.</p>{{end}}{{end}}

@@ -121,3 +121,15 @@ func TestAttemptTimeout(t *testing.T) {
 		}
 	}
 }
+
+// Recent keeps the newest uploads first, at most recentMax.
+func TestRecent(t *testing.T) {
+	s := &Stats{}
+	for i := range recentMax + 5 {
+		s.record(Upload{Key: fmt.Sprint(i)})
+	}
+	r := s.Recent()
+	if len(r) != recentMax || r[0].Key != fmt.Sprint(recentMax+4) || r[len(r)-1].Key != "5" {
+		t.Errorf("recent %d, first %s, last %s", len(r), r[0].Key, r[len(r)-1].Key)
+	}
+}

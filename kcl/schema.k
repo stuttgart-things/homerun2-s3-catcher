@@ -55,7 +55,14 @@ schema S3Catcher:
     # homerun2-scout's SCOUT_RETENTION_TTL (default 48h).
     maxLag: str = "12h"
 
-    # Health endpoint
+    # UI (#7): URL prefix behind sthings-portal, e.g. "/archive"; empty
+    # serves it at the root. /health and /healthz stay at the root.
+    basePath: str = ""
+    # Bucket of the cluster-analysis reports shown in the UI's Analyses tab;
+    # empty hides them. Read with the archive's credentials.
+    analysisBucket: str = ""
+
+    # Health endpoint and UI
     healthPort: int | str = "8080"
 
     # Service

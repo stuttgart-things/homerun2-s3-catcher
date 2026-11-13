@@ -90,6 +90,8 @@ func New(store Store, keyTemplate string, systems []string) (*Archiver, error) {
 type Result struct {
 	Key     string // object key, empty if skipped
 	Skipped bool   // filtered out by system
+	System  string // the message's system
+	Bytes   int    // size of the uploaded object
 }
 
 // header is the part of the document the key needs.
@@ -108,7 +110,7 @@ func (a *Archiver) Archive(ctx context.Context, e Entry) (Result, error) {
 		return Result{}, fmt.Errorf("%w: decode document %s: %w", ErrInvalid, e.MessageID, err)
 	}
 	if a.systems != nil && !a.systems[h.System] {
-		return Result{Skipped: true}, nil
+		return Result{Skipped: true, System: h.System}, nil
 	}
 
 	now := a.now().UTC()
@@ -129,7 +131,7 @@ func (a *Archiver) Archive(ctx context.Context, e Entry) (Result, error) {
 	if err := a.store.Put(ctx, key, body); err != nil {
 		return Result{}, fmt.Errorf("put %s: %w", key, err)
 	}
-	return Result{Key: key}, nil
+	return Result{Key: key, System: h.System, Bytes: len(body)}, nil
 }
 
 // Key renders the object key of e. The date is the event time: timestamp_unix,

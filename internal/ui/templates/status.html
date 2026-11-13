@@ -1,0 +1,31 @@
+<div hx-get="{{.BasePath}}/ui/status" hx-trigger="every 10s" hx-swap="outerHTML">
+<div class="cards">
+    <div class="card"><div class="label">Status</div><div class="value {{if eq .Status "healthy"}}ok{{else}}warn{{end}}">{{.Status}}</div></div>
+    <div class="card"><div class="label">Archived</div><div class="value">{{.Archived}}</div></div>
+    <div class="card"><div class="label">Failed attempts</div><div class="value {{if gt .Failed 0}}warn{{end}}">{{.Failed}}</div></div>
+    <div class="card"><div class="label">Missing</div><div class="value">{{.Missing}}</div></div>
+    <div class="card"><div class="label">Skipped</div><div class="value">{{.Skipped}}</div></div>
+    <div class="card"><div class="label">Invalid</div><div class="value {{if gt .Invalid 0}}err{{end}}">{{.Invalid}}</div></div>
+    <div class="card"><div class="label">Last upload</div><div class="value" style="font-size:1rem">{{if .LastArchived.IsZero}}—{{else}}{{ago .LastArchived}}{{end}}</div></div>
+</div>
+<p class="muted">Counters since the catcher started ({{ago .Started}}). Lag: the oldest message not archived yet, per stream; above {{.MaxLag}} homerun2-scout's retention may prune messages before they are archived.</p>
+<table>
+    <thead><tr><th>Stream</th><th class="num">Pending</th><th>Oldest unarchived</th><th class="num">Lag</th><th></th></tr></thead>
+    <tbody>
+    {{range .Streams}}
+    <tr><td>{{.Name}}</td><td class="num">{{.Pending}}</td><td>{{if .Oldest}}{{.Oldest.Format "2006-01-02 15:04:05"}} UTC{{else}}—{{end}}</td>
+        <td class="num {{if .Over}}err{{end}}">{{.Age}}</td><td class="err">{{.Error}}</td></tr>
+    {{else}}<tr><td colspan="5" class="muted">No lag measured yet.</td></tr>{{end}}
+    </tbody>
+</table>
+<h5>Latest uploads since start</h5>
+<table>
+    <thead><tr><th>Time</th><th>System</th><th>Stream</th><th class="num">Size</th><th>Key</th></tr></thead>
+    <tbody>
+    {{range .Recent}}
+    <tr><td>{{.At.Format "15:04:05"}}</td><td>{{.System}}</td><td>{{.Stream}}</td><td class="num">{{bytes .Bytes}}</td>
+        <td><a href="#" hx-get="{{$.BasePath}}/ui/object?key={{urlquery .Key}}" hx-target="#panel">{{.Key}}</a></td></tr>
+    {{else}}<tr><td colspan="5" class="muted">Nothing uploaded since the start.</td></tr>{{end}}
+    </tbody>
+</table>
+</div>

@@ -1,0 +1,2 @@
+<p><a href="#" hx-get="{{.BasePath}}/ui/analyses" hx-target="#panel">← analyses</a> · <code>{{.Key}}</code></p>
+{{if .Error}}<p class="err">{{.Error}}</p>{{else if .HTML}}<div class="report">{{.HTML}}</div>{{else}}<pre class="json">{{.Body}}</pre>{{end}}

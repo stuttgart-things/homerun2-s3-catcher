@@ -30,6 +30,8 @@ _keyTemplate = option("config.keyTemplate")
 _systems = option("config.systems")
 _maxLag = option("config.maxLag")
 _healthPort = option("config.healthPort")
+_basePath = option("config.basePath")
+_analysisBucket = option("config.analysisBucket")
 _extraEnvVars = option("config.extraEnvVars") or {}
 
 # Config instance with command-line overrides
@@ -80,6 +82,10 @@ config: schema.S3Catcher = schema.S3Catcher {
         maxLag = _maxLag
     if _healthPort:
         healthPort = _healthPort
+    if _basePath:
+        basePath = _basePath
+    if _analysisBucket:
+        analysisBucket = _analysisBucket
     if _extraEnvVars:
         extraEnvVars = _extraEnvVars
 }
