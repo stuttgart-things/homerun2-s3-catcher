@@ -1,0 +1,205 @@
+---
+version: 3
+includes:
+  git:
+    taskfile: https://raw.githubusercontent.com/stuttgart-things/tasks/refs/heads/main/git/git.yaml
+  lint:
+    taskfile: https://raw.githubusercontent.com/stuttgart-things/tasks/refs/heads/main/git/linting.yaml
+  go:
+    taskfile: https://raw.githubusercontent.com/stuttgart-things/tasks/refs/heads/main/go/lint.yaml
+  dagger:
+    taskfile: https://raw.githubusercontent.com/stuttgart-things/tasks/refs/heads/main/dagger/modules.yaml
+  image:
+    taskfile: https://raw.githubusercontent.com/stuttgart-things/tasks/refs/heads/main/docker/copy.yaml
+  goBuild:
+    taskfile: https://raw.githubusercontent.com/stuttgart-things/tasks/refs/heads/main/go/build.yaml
+  release:
+    taskfile: https://raw.githubusercontent.com/stuttgart-things/tasks/refs/heads/main/go/release-workflow.yaml
+
+vars:
+  PROJECT:
+    sh: basename $(pwd)
+  ORGA_NAME: stuttgart-things
+  GO_MODULE: github.com/{{ .ORGA_NAME }}/{{ .PROJECT }}
+  DAGGER_MODULE_DIR: ./dagger
+  SOURCE_CODE_DIR: "."
+  LINT_REPORT_PATH: /tmp/lint-report-{{ .PROJECT }}.txt
+  TEST_REPORT_PATH: /tmp/test-report-{{ .PROJECT }}.txt
+  TARGET_IMAGE_REPO: ghcr.io/{{ .ORGA_NAME }}/{{ .PROJECT }}
+  DAGGER_KCL_MODULE: github.com/stuttgart-things/dagger/kcl@v0.138.0
+  DAGGER_K8S_DEPLOY_MODULE: github.com/stuttgart-things/blueprints/kubernetes-deployment@v3.11.1
+  KUBECONFIG_PATH: ~/.kube/movie-scripts
+  DEPLOY_NAMESPACE: homerun2
+  KCL_SOURCE_DIR: kcl
+  KCL_PROFILE_FILE: tests/kcl-deploy-profile.yaml
+  RENDERED_OUTPUT_PATH: /tmp/rendered-{{ .PROJECT }}.yaml
+  KUSTOMIZE_BASE_EXPORT_PATH: /tmp/kustomize-base-{{ .PROJECT }}
+  KUSTOMIZE_OCI_REPO: ghcr.io/{{ .ORGA_NAME }}/{{ .PROJECT }}-kustomize
+
+tasks:
+  default:
+    desc: Default task is select & do (work)
+    cmds:
+      - task do
+
+  do:
+    desc: Select a task to run
+    cmds:
+      - |
+        task_name=$(task -l | awk '/^\*/ {print $2}' | sed 's/:$//' | gum choose)
+        [ -n "$task_name" ] && task "$task_name"
+
+  # === Lint ===
+
+  lint:
+    desc: Run Go lint via Dagger module
+    cmds:
+      - |
+        dagger call -m {{ .DAGGER_MODULE_DIR }} lint \
+          --src "{{ .SOURCE_CODE_DIR }}" \
+          export --path={{ .LINT_REPORT_PATH }} \
+          --progress plain
+
+  # === Build & Test ===
+
+  build-test-binary:
+    desc: Build and test binary with Redis via Dagger
+    cmds:
+      - |
+        dagger call -m {{ .DAGGER_MODULE_DIR }} \
+        build-and-test-binary \
+        --source "{{ .SOURCE_CODE_DIR }}" \
+        export --path={{ .TEST_REPORT_PATH }} \
+        --progress plain -vv
+
+  build-output-binary:
+    desc: Build project binary
+    cmds:
+      - |
+        dagger call -m {{ .DAGGER_MODULE_DIR }} build \
+        --src "{{ .SOURCE_CODE_DIR }}" \
+        --bin-name="{{ .PROJECT }}" \
+        --progress plain -vv \
+        export --path=/tmp/go/build
+
+        ls -lta /tmp/go/build
+
+  # === Image Build & Scan ===
+
+  build-scan-image-ko:
+    desc: Build, push and scan container image with ko
+    cmds:
+      - |
+        RANDOM_TAG=$(openssl rand -hex 6)
+        REPO_NAME="ttl.sh/{{ .PROJECT }}-${RANDOM_TAG}"
+
+        echo "Building and pushing to: ${REPO_NAME}"
+
+        IMAGE_REF=$(dagger call -m {{ .DAGGER_MODULE_DIR }} build-image \
+          --src "{{ .SOURCE_CODE_DIR }}" \
+          --repo "$REPO_NAME" \
+          --push="true" \
+          --progress plain)
+
+        echo "Image pushed: $IMAGE_REF"
+        echo "Scanning with Trivy..."
+
+        dagger call -m {{ .DAGGER_MODULE_DIR }} scan-image \
+          --image-ref "$IMAGE_REF" \
+          --severity "HIGH,CRITICAL" \
+          --progress plain \
+          export --path=/tmp/trivy-scan-{{ .PROJECT }}.json
+
+        echo "Build and scan complete!"
+
+  # === Release ===
+
+  trigger-release:
+    desc: Trigger Release workflow on GitHub Actions
+    cmds:
+      - |
+        echo "Triggering Release workflow..."
+        gh workflow run Release
+        sleep 2
+        RUN_ID=$(gh run list --workflow=Release --limit=1 --json databaseId --jq '.[0].databaseId')
+        echo "Run: https://github.com/{{ .ORGA_NAME }}/{{ .PROJECT }}/actions/runs/${RUN_ID}"
+        gh run watch "${RUN_ID}"
+
+  # === Redis (Development) ===
+
+  run-redis-cli:
+    desc: Run Redis CLI via Dagger
+    cmds:
+      - dagger call -m github.com/stuttgart-things/dagger/homerun@v0.138.0 redis-cli terminal
+
+  run-redis-as-service:
+    desc: Run Redis as service via Dagger
+    vars:
+      PORT: 6379
+      PASSWORD: mypass # pragma: allowlist secret
+    cmds:
+      - |
+        dagger call -m github.com/stuttgart-things/dagger/homerun@v0.138.0 \
+          run-redis --port {{ .PORT }} --password "{{ .PASSWORD }}" up
+
+  # === KCL Manifest Rendering ===
+
+  render-manifests-quick:
+    desc: Render Kubernetes manifests (non-interactive, uses defaults)
+    vars:
+      SOURCE: '{{ .SOURCE | default .KCL_SOURCE_DIR }}'
+      PROFILE: '{{ .PROFILE | default .KCL_PROFILE_FILE }}'
+      DESTINATION: '{{ .DESTINATION | default .RENDERED_OUTPUT_PATH }}'
+    cmds:
+      - |
+        dagger call -m {{ .DAGGER_KCL_MODULE }} run \
+          --source "{{ .SOURCE }}" \
+          --parameters-file="{{ .PROFILE }}" \
+          export --path="{{ .DESTINATION }}"
+
+        echo "Manifests rendered: {{ .DESTINATION }}"
+
+  push-kustomize-base:
+    desc: Render and push kustomize base as OCI artifact
+    vars:
+      SOURCE: '{{ .SOURCE | default .KCL_SOURCE_DIR }}'
+      PROFILE: '{{ .PROFILE | default .KCL_PROFILE_FILE }}'
+      TAG:
+        sh: 'gum input --placeholder "Enter version tag (e.g., v1.0.0)" --header "OCI TAG"'
+    cmds:
+      - |
+        echo "Pushing kustomize base as OCI artifact..."
+        echo "Target: {{ .KUSTOMIZE_OCI_REPO }}:{{ .TAG }}"
+
+        dagger call -m {{ .DAGGER_KCL_MODULE }} push-kustomize-base \
+          --source "{{ .SOURCE }}" \
+          --parameters-file="{{ .PROFILE }}" \
+          --address "{{ .KUSTOMIZE_OCI_REPO }}" \
+          --tag "{{ .TAG }}" \
+          --user env:GITHUB_USER \
+          --password env:GITHUB_TOKEN \
+          --progress plain
+
+        echo "OCI artifact pushed: {{ .KUSTOMIZE_OCI_REPO }}:{{ .TAG }}"
+
+  # === Release ===
+
+  release-local:
+    desc: Full release pipeline (local, interactive)
+    cmds:
+      - task: release:release-local
+        vars:
+          KCL_SOURCE_DIR: "{{ .KCL_SOURCE_DIR }}"
+          KCL_PROFILE_FILE: "{{ .KCL_PROFILE_FILE }}"
+          KUSTOMIZE_OCI_REPO: "{{ .KUSTOMIZE_OCI_REPO }}"
+          TARGET_IMAGE_REPO: "{{ .TARGET_IMAGE_REPO }}"
+
+  release-github:
+    desc: Full release pipeline (non-interactive, for CI)
+    cmds:
+      - task: release:release-github
+        vars:
+          KCL_SOURCE_DIR: "{{ .KCL_SOURCE_DIR }}"
+          KCL_PROFILE_FILE: "{{ .KCL_PROFILE_FILE }}"
+          KUSTOMIZE_OCI_REPO: "{{ .KUSTOMIZE_OCI_REPO }}"
+          TARGET_IMAGE_REPO: "{{ .TARGET_IMAGE_REPO }}"

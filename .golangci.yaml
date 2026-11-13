@@ -1,0 +1,125 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - copyloopvar
+    - depguard
+    - dogsled
+    - funlen
+    - gocheckcompilerdirectives
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - godox
+    - goprintffuncname
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - mnd
+    - nakedret
+    - nolintlint
+    - testifylint
+    - unconvert
+    - unparam
+    - whitespace
+  settings:
+    depguard:
+      rules:
+        logger:
+          files:
+            - '!**/pkg/logutils/**.go'
+          deny:
+            - pkg: github.com/sirupsen/logrus
+              desc: logging is allowed only by logutils.Log.
+            - pkg: github.com/pkg/errors
+              desc: Should be replaced by standard lib errors package.
+    funlen:
+      lines: -1
+      statements: 50
+    goconst:
+      min-len: 2
+      min-occurrences: 3
+    gocritic:
+      disabled-checks:
+        - dupImport
+        - ifElseChain
+        - octalLiteral
+        - whyNoLint
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - style
+    gocyclo:
+      min-complexity: 15
+    godox:
+      keywords:
+        - FIXME
+    govet:
+      enable:
+        - nilness
+        - shadow
+    lll:
+      line-length: 140
+    misspell:
+      locale: US
+    mnd:
+      checks:
+        - argument
+        - case
+        - condition
+        - return
+      ignored-numbers:
+        - "0"
+        - "1"
+        - "2"
+        - "3"
+        - "10"
+        - "50"
+        - "100"
+        - "128"
+        - "255"
+      ignored-functions:
+        - strings.SplitN
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - dupl
+          - lll
+          - mnd
+        path: (.+)_test\.go
+      # goconst flags table-driven test fixtures (systems, severities, the
+      # stream name "messages"), where inline literals read better than a
+      # constant per row.
+      - linters:
+          - goconst
+        path: (.+)_test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  settings:
+    gofmt:
+      rewrite-rules:
+        - pattern: interface{}
+          replacement: any
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

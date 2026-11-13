@@ -1,0 +1,98 @@
+# homerun2-s3-catcher
+
+Archives homerun2 messages from Redis Streams to S3 (AWS, MinIO, RustFS, any S3 compatible store) as JSON. Redis keeps messages only as long as homerun2-scout's retention allows (`SCOUT_RETENTION_TTL`, default 48h). This catcher is the long-term copy.
+
+```
+pitchers → Redis (JSON document + stream entry messageID) → s3-catcher → S3
+```
+
+The first use case is K8sGPT findings: homerun2-k8s-pitcher pitches each K8sGPT `Result` with the CR as `payload`, and the archive keeps it as nested JSON.
+
+## How it works
+
+- **Consumer group:** `homerun2-s3-catcher` reads the stream entries. For each one it calls `JSON.GET <messageID>`, then `PutObject`.
+- **At least once:** an entry is acknowledged only after a successful upload. A failed upload (S3 down, timeout) stays pending and is delivered again after `VISIBILITY_TIMEOUT`. A single attempt is bounded to half of that, so a hanging S3 does not pile up parallel attempts.
+- **Idempotent:** the object key contains the messageID, so a repeated delivery overwrites the same object.
+- **Backlog:** a new group starts at `0` (`CONSUMER_START_ID`), so everything still in the stream is archived. An existing group keeps its position across restarts.
+- **Acknowledged without an upload:** entries whose document is already gone (retention was faster; counted as `missing`), entries that can never be archived (`invalid`), and systems filtered out by `SYSTEMS` (`skipped`).
+- **Lag against retention:** every `LAG_INTERVAL` the age of the oldest unarchived entry is measured per stream, whether pending or not yet delivered. Above `MAX_LAG`, `/healthz` reports `degraded` and a warning is logged. Keep `MAX_LAG` well below scout's retention, or messages get pruned before they are archived.
+
+### Object layout
+
+Key (default, Hive-style partitions):
+
+```
+system=<system>/date=<event date>/<messageID>.json
+```
+
+Body:
+
+```json
+{
+  "messageID": "1f0c…-k8s-labda",
+  "stream": "messages",
+  "streamID": "1794574784007-0",
+  "archivedAt": "2026-11-13T13:00:37Z",
+  "message": {
+    "title": "Pod default/web-0: 1 finding",
+    "severity": "warning",
+    "system": "k8s-labda",
+    "timestamp": "2026-11-12T23:59:00Z",
+    "payload": { "kind": "Result", "spec": { "error": [ { "text": "Back-off restarting failed container" } ] } }
+  }
+}
+```
+
+`message` is the Redis JSON document as stored, unknown fields included. The event date comes from `timestamp_unix`, else `timestamp`, else the archive time.
+
+Example query with DuckDB:
+
+```sql
+SELECT system, date, message.title, message.payload.spec.error
+FROM read_json('s3://homerun-archive/**/*.json', hive_partitioning = true)
+WHERE system = 'k8s-labda' AND date >= '2026-11-01';
+```
+
+## Configuration
+
+| Variable | Default | |
+|---|---|---|
+| `REDIS_ADDR` / `REDIS_PORT` / `REDIS_PASSWORD` | `localhost` / `6379` / – | |
+| `REDIS_STREAMS` | `REDIS_STREAM`, else `messages` | Comma-separated streams |
+| `REDIS_STARTUP_TIMEOUT` | `120s` | How long startup waits for Redis |
+| `CONSUMER_GROUP` | `homerun2-s3-catcher` | |
+| `CONSUMER_NAME` | hostname | One consumer per pod |
+| `CONSUMER_START_ID` | `0` | Start of a **new** group: `0` = whole stream, `$` = only new entries |
+| `VISIBILITY_TIMEOUT` | `1m` | After this long a failed (pending) entry is delivered again |
+| `S3_ENDPOINT` | **required** | `host[:port]`, without scheme |
+| `S3_BUCKET` | **required** | |
+| `S3_REGION` | `us-east-1` | |
+| `S3_ACCESS_KEY` / `S3_SECRET_KEY` | – | |
+| `S3_USE_SSL` | `true` | |
+| `S3_INSECURE` | `false` | Skip TLS verification (self-signed lab certificates) |
+| `S3_CREATE_BUCKET` | `false` | Create the bucket if it is missing |
+| `S3_KEY_TEMPLATE` | `system={{.System}}/date={{.Date}}/{{.MessageID}}.json` | Go template. Fields: `System`, `Severity`, `Date`, `Year`, `Month`, `Day`, `Hour`, `MessageID`, `Stream`. Values are sanitized to one path segment each. Keep `MessageID` in the key, it makes uploads idempotent. |
+| `SYSTEMS` | *(all)* | Comma-separated systems to archive |
+| `MAX_LAG` | `12h` | `0` disables the check |
+| `LAG_INTERVAL` | `1m` | |
+| `HEALTH_PORT` | `8080` | `/healthz`, `/health` |
+| `LOG_FORMAT` / `LOG_LEVEL` | `json` / `info` | |
+
+Startup waits for Redis and up to 2 minutes for the bucket, then exits. `/healthz` returns status, counters (`archived`, `skipped`, `missing`, `invalid`, `failed`, `lastArchived`) and the lag per stream. `degraded` is still HTTP 200, so probes do not restart a catcher that is merely behind; alert on the status instead.
+
+## Deployment
+
+KCL manifests in `kcl/`, released as a kustomize OCI base (`ghcr.io/stuttgart-things/homerun2-s3-catcher-kustomize`). S3 credentials can be inline (`config.s3AccessKey`/`config.s3SecretKey`, rendered into `<name>-s3`) or come from an existing Secret with the keys `accessKey` and `secretKey` (`config.s3ExistingSecret`).
+
+```bash
+task render-manifests-quick
+```
+
+## Development
+
+```bash
+go test ./...          # unit tests, no Redis or S3 needed
+task build-test-binary # Dagger: unit tests + binary against Redis Stack and RustFS
+task lint
+task build-scan-image-ko
+```
