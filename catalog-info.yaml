@@ -1,0 +1,28 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: homerun2-s3-catcher
+  description: Redis Streams consumer that archives homerun2 messages to S3 (MinIO/AWS) as JSON
+  annotations:
+    github.com/project-slug: stuttgart-things/homerun2-s3-catcher
+    backstage.io/source-location: url:https://github.com/stuttgart-things/homerun2-s3-catcher
+  tags:
+    - s3
+    - redis
+    - golang
+    - homerun2
+    - consumer
+    - archive
+  links:
+    - url: https://github.com/stuttgart-things/homerun2-s3-catcher
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: homerun2
+  dependsOn:
+    - resource:redis
+    - resource:s3

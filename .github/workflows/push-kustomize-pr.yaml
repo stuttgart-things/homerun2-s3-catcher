@@ -1,0 +1,33 @@
+---
+name: Push PR Kustomize OCI
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  push-kustomize:
+    # Declared here as well as in the called workflow: a reusable workflow
+    # can narrow the caller's token but never widen it, so leaving this to
+    # the repository default is how a push quietly turns into a 403.
+    permissions:
+      contents: read
+      packages: write
+    uses: stuttgart-things/github-workflow-templates/.github/workflows/call-push-kustomize.yaml@main
+    with:
+      runs-on: ubuntu-latest
+      # The head of the pull request, not the merge commit GitHub checks out
+      # by default. The tag published is `pr-<n>-<head sha>`, the string the
+      # preview ApplicationSet composes from its own `.head_sha`, so building
+      # anything else puts a name on an artefact that is not what the name
+      # says.
+      ref: ${{ github.event.pull_request.head.sha }}
+      kcl-source-dir: kcl
+      kcl-profile-file: tests/kcl-deploy-profile.yaml
+      kustomize-oci-repo: ghcr.io/stuttgart-things/homerun2-s3-catcher-kustomize
+      tag: pr-${{ github.event.number }}-${{ github.event.pull_request.head.sha }}
+    secrets: inherit # pragma: allowlist secret

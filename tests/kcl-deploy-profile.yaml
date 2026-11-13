@@ -1,0 +1,13 @@
+config.image: ghcr.io/stuttgart-things/homerun2-s3-catcher:latest
+config.namespace: homerun2
+config.redisAddr: redis-stack.homerun2.svc.cluster.local
+config.redisPort: "6379"
+config.redisStream: messages
+config.consumerGroup: homerun2-s3-catcher
+config.redisPassword: changeme # pragma: allowlist secret
+config.s3Endpoint: minio.minio.svc.cluster.local:9000
+config.s3Bucket: homerun-archive
+config.s3CreateBucket: true
+config.s3AccessKey: changeme # pragma: allowlist secret
+config.s3SecretKey: changeme # pragma: allowlist secret
+config.healthPort: "8080"

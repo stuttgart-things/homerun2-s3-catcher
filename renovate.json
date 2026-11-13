@@ -1,0 +1,50 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "ignorePaths": [
+    "dagger/**"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "stuttgart-things/dagger module pins in Taskfile.yaml (github.com/stuttgart-things/dagger/<module>@vX.Y.Z). The monorepo is released as one version, so every pin tracks its releases.",
+      "managerFilePatterns": [
+        "/^Taskfile\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "github\\.com/stuttgart-things/dagger/[a-z0-9-]+@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "stuttgart-things/dagger",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "stuttgart-things/blueprints module pins in Taskfile.yaml (github.com/stuttgart-things/blueprints/<module>@vX.Y.Z).",
+      "managerFilePatterns": [
+        "/^Taskfile\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "github\\.com/stuttgart-things/blueprints/[a-z0-9-]+@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "stuttgart-things/blueprints",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "KCL k8s module version in kcl.mod, published as ghcr.io/kcl-lang/k8s with tags such as 1.31 and 1.31.3.",
+      "managerFilePatterns": [
+        "/(^|/)kcl\\.mod$/"
+      ],
+      "matchStrings": [
+        "\\nk8s\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "depNameTemplate": "ghcr.io/kcl-lang/k8s",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "loose"
+    }
+  ]
+}
