@@ -16,3 +16,12 @@ func TestIDTime(t *testing.T) {
 		}
 	}
 }
+
+func TestEarliest(t *testing.T) {
+	if got := earliest([]string{"2000-0", "", "1000-5", "x"}); !got.Equal(time.UnixMilli(1000).UTC()) {
+		t.Errorf("earliest = %v", got)
+	}
+	if got := earliest([]string{"", "nope"}); !got.IsZero() {
+		t.Errorf("earliest of nothing = %v", got)
+	}
+}

@@ -25,7 +25,7 @@ func TestHealth(t *testing.T) {
 	}{{false, "healthy"}, {true, "degraded"}} {
 		h := NewHealthHandler(BuildInfo{Version: "v1"}, stats, fixedLag{Degraded: tc.degraded})
 		rec := httptest.NewRecorder()
-		h(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+		h(rec, httptest.NewRequest(http.MethodGet, "/healthz", http.NoBody))
 
 		// Degraded is still 200: a probe must not restart a catcher that is
 		// only behind.
@@ -46,7 +46,7 @@ func TestHealth(t *testing.T) {
 	}
 
 	rec := httptest.NewRecorder()
-	NewHealthHandler(BuildInfo{}, stats, nil)(rec, httptest.NewRequest(http.MethodPost, "/healthz", nil))
+	NewHealthHandler(BuildInfo{}, stats, nil)(rec, httptest.NewRequest(http.MethodPost, "/healthz", http.NoBody))
 	if rec.Code != http.StatusMethodNotAllowed {
 		t.Errorf("POST: %d", rec.Code)
 	}

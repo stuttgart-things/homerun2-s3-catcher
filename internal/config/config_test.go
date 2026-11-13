@@ -15,17 +15,32 @@ func TestLoadDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Redis.Addr != "localhost" || c.Redis.Port != "6379" || len(c.Streams) != 1 || c.Streams[0] != "messages" {
-		t.Errorf("redis = %+v streams %v", c.Redis, c.Streams)
+	got := map[string]any{
+		"redis":       c.Redis.Addr + ":" + c.Redis.Port,
+		"streams":     strings.Join(c.Streams, ","),
+		"group":       c.ConsumerGroup,
+		"startID":     c.ConsumerStartID,
+		"key":         c.KeyTemplate,
+		"s3":          c.S3,
+		"maxLag":      c.MaxLag,
+		"visibility":  c.VisibilityTimeout,
+		"lagInterval": c.LagInterval,
 	}
-	if c.ConsumerGroup != DefaultConsumerGroup || c.ConsumerStartID != "0" || c.KeyTemplate != DefaultKeyTemplate {
-		t.Errorf("consumer/key defaults: %+v", c)
+	want := map[string]any{
+		"redis":       "localhost:6379",
+		"streams":     "messages",
+		"group":       DefaultConsumerGroup,
+		"startID":     "0",
+		"key":         DefaultKeyTemplate,
+		"s3":          S3Config{Endpoint: "minio:9000", Bucket: "homerun", Region: "us-east-1", UseSSL: true},
+		"maxLag":      12 * time.Hour,
+		"visibility":  time.Minute,
+		"lagInterval": time.Minute,
 	}
-	if !c.S3.UseSSL || c.S3.Insecure || c.S3.CreateBucket || c.S3.Region != "us-east-1" {
-		t.Errorf("s3 defaults: %+v", c.S3)
-	}
-	if c.MaxLag != 12*time.Hour || c.VisibilityTimeout != time.Minute || c.LagInterval != time.Minute {
-		t.Errorf("durations: %v %v %v", c.MaxLag, c.VisibilityTimeout, c.LagInterval)
+	for k, w := range want {
+		if got[k] != w {
+			t.Errorf("%s = %v, want %v", k, got[k], w)
+		}
 	}
 }
 

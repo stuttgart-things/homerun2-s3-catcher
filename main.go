@@ -28,8 +28,12 @@ var (
 	date    = "unknown"
 )
 
-// bucketTimeout bounds how long startup waits for the S3 endpoint.
-const bucketTimeout = 2 * time.Minute
+// bucketTimeout bounds how long startup waits for the S3 endpoint; retries
+// back off up to maxBucketBackoff.
+const (
+	bucketTimeout    = 2 * time.Minute
+	maxBucketBackoff = 15 * time.Second
+)
 
 func main() {
 	config.SetupLogging()
@@ -151,7 +155,7 @@ func waitForBucket(ctx context.Context, store *archive.S3Store, create bool) {
 		case <-ctx.Done():
 		case <-time.After(backoff):
 		}
-		backoff = min(backoff*2, 15*time.Second)
+		backoff = min(backoff*2, maxBucketBackoff)
 	}
 }
 
