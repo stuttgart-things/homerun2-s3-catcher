@@ -20,6 +20,7 @@ import (
 	"github.com/stuttgart-things/homerun2-s3-catcher/internal/handlers"
 	"github.com/stuttgart-things/homerun2-s3-catcher/internal/inventory"
 	"github.com/stuttgart-things/homerun2-s3-catcher/internal/lag"
+	"github.com/stuttgart-things/homerun2-s3-catcher/internal/metrics"
 	"github.com/stuttgart-things/homerun2-s3-catcher/internal/ui"
 )
 
@@ -35,6 +36,8 @@ var (
 const (
 	bucketTimeout    = 2 * time.Minute
 	maxBucketBackoff = 15 * time.Second
+	// rebuildTimeout bounds rebuilding the snapshot gauges at startup.
+	rebuildTimeout = 5 * time.Minute
 )
 
 func main() {
@@ -69,6 +72,7 @@ func main() {
 
 	stats := &catcher.Stats{}
 	monitor := lag.New(docsClient, cfg.ConsumerGroup, cfg.Streams, cfg.MaxLag)
+	m := metrics.New(monitor)
 
 	// The UI's view of the buckets: the archive, and the analyses if a
 	// bucket for them is configured.
@@ -84,6 +88,7 @@ func main() {
 		analysisLister, analysisGetter = analysisStore, analysisStore
 	}
 	inv := inventory.New(store, analysisLister, cfg.InventoryDays)
+	watchAnalyses(inv, m, analysisStore)
 	web := &ui.UI{
 		BasePath: cfg.BasePath, Bucket: cfg.S3.Bucket, Info: ui.BuildInfo{Version: version, Commit: commit, Date: date},
 		Stats: stats, Lag: monitor, Inv: inv, Archive: store, Analysis: analysisGetter, Started: time.Now(),
@@ -96,13 +101,15 @@ func main() {
 		StartID:           cfg.ConsumerStartID,
 		VisibilityTimeout: cfg.VisibilityTimeout,
 		Concurrency:       4,
+		Observer:          m,
 	})
 	if err != nil {
 		fail("failed to create catcher", err)
 	}
 
-	go serveHTTP(cfg.HealthPort, cfg.BasePath, web.Handler(), handlers.NewHealthHandler(
-		handlers.BuildInfo{Version: version, Commit: commit, Date: date}, stats, monitor))
+	go serveHTTP(cfg.HealthPort, handlers.Mount(cfg.BasePath, web.Handler(), handlers.NewHealthHandler(
+		handlers.BuildInfo{Version: version, Commit: commit, Date: date}, stats, monitor), m.Handler()), cfg.BasePath)
+	go rebuildMetrics(ctx, m, store)
 	go monitor.Run(ctx, cfg.LagInterval)
 	go inv.Run(ctx, cfg.InventoryInterval)
 	go func() {
@@ -124,6 +131,24 @@ func main() {
 		"max_lag", cfg.MaxLag.String())
 	c.Run()
 	slog.Info("catcher exited gracefully")
+}
+
+// watchAnalyses keeps the analysis metrics on the newest report: they
+// follow the inventory's listing of the analysis bucket (INVENTORY_INTERVAL).
+func watchAnalyses(inv *inventory.Inventory, m *metrics.Metrics, analysisStore *archive.S3Store) {
+	if analysisStore == nil {
+		return
+	}
+	w := &metrics.AnalysisWatcher{Metrics: m, Getter: analysisStore}
+	inv.OnRefresh = func(ctx context.Context, s inventory.Snapshot) { w.Update(ctx, s.Analyses) }
+}
+
+// rebuildMetrics sets the snapshot gauges from the archive, so a restart
+// does not zero the dashboards; live snapshots that arrive meanwhile win.
+func rebuildMetrics(ctx context.Context, m *metrics.Metrics, store *archive.S3Store) {
+	rctx, cancel := context.WithTimeout(ctx, rebuildTimeout)
+	defer cancel()
+	m.Rebuild(rctx, store, metrics.DefaultRebuildOptions)
 }
 
 func fail(msg string, err error) {
@@ -184,8 +209,8 @@ func s3Options(c config.S3Config) archive.S3Options {
 	}
 }
 
-func serveHTTP(port, basePath string, app http.Handler, health http.HandlerFunc) {
-	srv := &http.Server{Addr: ":" + port, Handler: handlers.Mount(basePath, app, health), ReadHeaderTimeout: 10 * time.Second}
+func serveHTTP(port string, h http.Handler, basePath string) {
+	srv := &http.Server{Addr: ":" + port, Handler: h, ReadHeaderTimeout: 10 * time.Second}
 	slog.Info("http server starting", "port", port, "base_path", basePath)
 	if err := srv.ListenAndServe(); err != nil {
 		slog.Error("http server error", "error", err)

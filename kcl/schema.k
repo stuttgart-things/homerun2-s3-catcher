@@ -62,6 +62,13 @@ schema S3Catcher:
     # empty hides them. Read with the archive's credentials.
     analysisBucket: str = ""
 
+    # Prometheus (#9): /metrics is always served at the root. The
+    # ServiceMonitor needs the prometheus-operator CRDs; serviceMonitorLabels
+    # match the Prometheus' serviceMonitorSelector (e.g. release: <name>).
+    serviceMonitorEnabled: bool = False
+    serviceMonitorInterval: str = "60s"
+    serviceMonitorLabels: {str:str} = {}
+
     # Health endpoint and UI
     healthPort: int | str = "8080"
 

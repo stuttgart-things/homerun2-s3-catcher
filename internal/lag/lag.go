@@ -28,6 +28,9 @@ type Stream struct {
 	age   time.Duration
 }
 
+// Lag is the age of the oldest unarchived entry, 0 if none.
+func (s Stream) Lag() time.Duration { return s.age }
+
 // Report is the latest measurement.
 type Report struct {
 	MeasuredAt time.Time         `json:"measuredAt"`

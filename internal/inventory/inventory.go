@@ -52,6 +52,10 @@ type Inventory struct {
 	latest   int
 	now      func() time.Time
 
+	// OnRefresh, if set, is called after every refresh with the new
+	// snapshot (e.g. to update the analysis metrics). Set it before Run.
+	OnRefresh func(ctx context.Context, s Snapshot)
+
 	mu   sync.RWMutex
 	snap Snapshot
 }
@@ -118,6 +122,9 @@ func (i *Inventory) Refresh(ctx context.Context) {
 	i.mu.Lock()
 	i.snap = snap
 	i.mu.Unlock()
+	if i.OnRefresh != nil {
+		i.OnRefresh(ctx, snap)
+	}
 }
 
 func (i *Inventory) aggregate(objs []archive.Object, at time.Time) Snapshot {
