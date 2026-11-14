@@ -8,6 +8,7 @@ import configmap
 import secret
 import deploy
 import service
+import servicemonitor
 
 # Export all manifests (filter out None values).
 # Namespace is NOT emitted from the KCL profile — the consuming Application
@@ -21,5 +22,6 @@ manifests = [
         secret.secretS3
         deploy.deployment
         service.service
+        servicemonitor.serviceMonitor
     ] if m
 ]

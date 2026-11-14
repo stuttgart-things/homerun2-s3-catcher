@@ -32,6 +32,9 @@ _maxLag = option("config.maxLag")
 _healthPort = option("config.healthPort")
 _basePath = option("config.basePath")
 _analysisBucket = option("config.analysisBucket")
+_serviceMonitorEnabled = option("config.serviceMonitorEnabled")
+_serviceMonitorInterval = option("config.serviceMonitorInterval")
+_serviceMonitorLabels = option("config.serviceMonitorLabels") or {}
 _extraEnvVars = option("config.extraEnvVars") or {}
 
 # Config instance with command-line overrides
@@ -86,6 +89,12 @@ config: schema.S3Catcher = schema.S3Catcher {
         basePath = _basePath
     if _analysisBucket:
         analysisBucket = _analysisBucket
+    if _serviceMonitorEnabled != None:
+        serviceMonitorEnabled = _serviceMonitorEnabled in _truthy
+    if _serviceMonitorInterval:
+        serviceMonitorInterval = _serviceMonitorInterval
+    if _serviceMonitorLabels:
+        serviceMonitorLabels = _serviceMonitorLabels
     if _extraEnvVars:
         extraEnvVars = _extraEnvVars
 }

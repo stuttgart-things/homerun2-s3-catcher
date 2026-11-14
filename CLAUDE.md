@@ -21,6 +21,7 @@ Redis Stream ──► catcher (JSON.GET messageID) ──► archive (key templ
                          │
                          └── ack only after a successful upload; failures stay pending
 lag monitor ── oldest unarchived entry per stream ──► /healthz (degraded above MAX_LAG)
+catcher (archived snapshot) ──► metrics (latest snapshot per system) ──► /metrics ──► Grafana "Fleet health"
 ```
 
 ## Key Paths
@@ -30,10 +31,12 @@ lag monitor ── oldest unarchived entry per stream ──► /healthz (degrad
 - `internal/archive/` — key template, record envelope, `ErrInvalid`, S3 store (`s3.go`)
 - `internal/catcher/` — redisqueue consumer; `handle` decides ack (nil) vs. redelivery (error)
 - `internal/lag/` — age of the oldest unarchived entry (pending or undelivered)
-- `internal/handlers/` — `/healthz` with counters and lag, `Mount` (BASE_PATH, health at the root)
+- `internal/handlers/` — `/healthz` with counters and lag, `Mount` (BASE_PATH, health and `/metrics` at the root)
+- `internal/metrics/` — Prometheus metrics (#9): `snapshot.go` parses findings/v1 and legacy K8sGPT snapshots, `Apply` resets a system's series per snapshot, `rebuild.go` restores the gauges from the archive at startup, `analysis.go` the latest analysis report; the catcher reports through `catcher.Observer`
+- `dashboards/` — Grafana "Fleet health" JSON and a kustomization rendering it as a sidecar ConfigMap
 - `internal/inventory/` — periodic bucket listing for the UI: objects/bytes per system and day, latest objects, analyses
 - `internal/ui/` — read-only web UI (htmx, embedded templates/static): status, uploads, objects, analyses; portal manifest + fragment
-- `kcl/` — Deployment, ConfigMap, Secrets (Redis, S3 or existing Secret), Service
+- `kcl/` — Deployment, ConfigMap, Secrets (Redis, S3 or existing Secret), Service, optional ServiceMonitor (`serviceMonitorEnabled`)
 
 ## Git Workflow
 

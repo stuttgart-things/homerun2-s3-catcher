@@ -1,0 +1,15 @@
+---
+# Grafana sidecar ConfigMap for the "Fleet health" dashboard (#9).
+#   kubectl apply -k dashboards/         # or a flux Kustomization with path: ./dashboards
+# Set the namespace the Grafana sidecar watches (flux: targetNamespace).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/part-of: homerun2
+configMapGenerator:
+  - name: homerun2-fleet-health-dashboard
+    files:
+      - fleet-health.json

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -72,6 +73,21 @@ func (s *S3Store) List(ctx context.Context, prefix string) ([]Object, error) {
 			return nil, fmt.Errorf("list %s/%s: %w", s.bucket, prefix, o.Err)
 		}
 		out = append(out, Object{Key: o.Key, Size: o.Size, LastModified: o.LastModified})
+	}
+	return out, nil
+}
+
+// Prefixes lists the common prefixes ("directories", ending in "/")
+// directly under prefix.
+func (s *S3Store) Prefixes(ctx context.Context, prefix string) ([]string, error) {
+	var out []string
+	for o := range s.client.ListObjects(ctx, s.bucket, minio.ListObjectsOptions{Prefix: prefix, Recursive: false}) {
+		if o.Err != nil {
+			return nil, fmt.Errorf("list %s/%s: %w", s.bucket, prefix, o.Err)
+		}
+		if strings.HasSuffix(o.Key, "/") {
+			out = append(out, o.Key)
+		}
 	}
 	return out, nil
 }

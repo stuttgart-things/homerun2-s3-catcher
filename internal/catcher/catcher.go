@@ -29,6 +29,23 @@ type DocClient interface {
 	Do(ctx context.Context, args ...any) *redis.Cmd
 }
 
+// Observer is told about every outcome, e.g. to export metrics.
+type Observer interface {
+	// Archived is called after an upload with the message document.
+	Archived(stream, system string, doc []byte)
+	// Failed is called for an attempt that is delivered again.
+	Failed(stream string)
+	// Unarchived is called for an entry acknowledged without an upload:
+	// reason skipped, missing or invalid.
+	Unarchived(stream, reason string)
+}
+
+type noObserver struct{}
+
+func (noObserver) Archived(string, string, []byte) {}
+func (noObserver) Failed(string)                   {}
+func (noObserver) Unarchived(string, string)       {}
+
 // Stats counts what the catcher did. Safe for concurrent use.
 type Stats struct {
 	Archived atomic.Int64 // written to S3
@@ -90,6 +107,7 @@ type Options struct {
 	StartID           string // for a new group: "0" (whole stream), "$" or an ID
 	VisibilityTimeout time.Duration
 	Concurrency       int
+	Observer          Observer // optional
 }
 
 // Catcher consumes the streams and archives every entry. An entry is
@@ -101,6 +119,7 @@ type Catcher struct {
 	docs     DocClient
 	archiver Archiver
 	stats    *Stats
+	obs      Observer
 	// attempt bounds one JSON.GET plus upload. It is shorter than the
 	// visibility timeout, so an attempt has failed before the entry is
 	// reclaimed; otherwise a hanging S3 piles up parallel attempts of the
@@ -143,7 +162,7 @@ func New(consumerClient redis.UniversalClient, docs DocClient, a Archiver, stats
 		return nil, fmt.Errorf("create redis consumer: %w", err)
 	}
 
-	c := &Catcher{consumer: consumer, docs: docs, archiver: a, stats: stats, attempt: attemptTimeout(o.VisibilityTimeout)}
+	c := &Catcher{consumer: consumer, docs: docs, archiver: a, stats: stats, obs: o.Observer, attempt: attemptTimeout(o.VisibilityTimeout)}
 	for _, s := range o.Streams {
 		consumer.RegisterWithLastID(s, o.StartID, c.handle)
 	}
@@ -170,12 +189,19 @@ func attemptTimeout(visibility time.Duration) time.Duration {
 	return min(visibility/2, maxAttempt)
 }
 
+const reasonInvalid = "invalid"
+
 // handle archives one entry. A nil return acknowledges it.
 func (c *Catcher) handle(msg *redisqueue.Message) error {
+	obs := c.obs
+	if obs == nil {
+		obs = noObserver{}
+	}
 	id, _ := msg.Values["messageID"].(string)
 	if id == "" {
 		slog.Warn("stream entry without messageID, acknowledged", "stream", msg.Stream, "id", msg.ID)
 		c.stats.Invalid.Add(1)
+		obs.Unarchived(msg.Stream, reasonInvalid)
 		return nil
 	}
 
@@ -188,10 +214,12 @@ func (c *Catcher) handle(msg *redisqueue.Message) error {
 		slog.Warn("message already gone from redis, acknowledged",
 			"stream", msg.Stream, "id", msg.ID, "messageID", id)
 		c.stats.Missing.Add(1)
+		obs.Unarchived(msg.Stream, "missing")
 		return nil
 	}
 	if err != nil {
 		c.stats.Failed.Add(1)
+		obs.Failed(msg.Stream)
 		return fmt.Errorf("JSON.GET %s: %w", id, err)
 	}
 
@@ -203,12 +231,15 @@ func (c *Catcher) handle(msg *redisqueue.Message) error {
 		slog.Error("message cannot be archived, acknowledged",
 			"stream", msg.Stream, "id", msg.ID, "messageID", id, "error", err)
 		c.stats.Invalid.Add(1)
+		obs.Unarchived(msg.Stream, reasonInvalid)
 		return nil
 	case err != nil:
 		c.stats.Failed.Add(1)
+		obs.Failed(msg.Stream)
 		return err
 	case res.Skipped:
 		c.stats.Skipped.Add(1)
+		obs.Unarchived(msg.Stream, "skipped")
 		return nil
 	}
 
@@ -216,6 +247,7 @@ func (c *Catcher) handle(msg *redisqueue.Message) error {
 	now := time.Now()
 	c.stats.lastUnix.Store(now.Unix())
 	c.stats.record(Upload{Key: res.Key, System: res.System, Stream: msg.Stream, Bytes: res.Bytes, At: now.UTC()})
+	obs.Archived(msg.Stream, res.System, []byte(doc))
 	slog.Debug("message archived", "stream", msg.Stream, "id", msg.ID, "key", res.Key)
 	return nil
 }
