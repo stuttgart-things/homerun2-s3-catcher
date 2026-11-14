@@ -1,3 +1,10 @@
+# [0.3.0](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.2.0...v0.3.0) (2026-11-14)
+
+
+### Features
+
+* Prometheus metrics from archived snapshots + Grafana fleet dashboard ([#10](https://github.com/stuttgart-things/homerun2-s3-catcher/issues/10)) ([d3c3f99](https://github.com/stuttgart-things/homerun2-s3-catcher/commit/d3c3f99ed761f29f6e4cb9f26d191ace0b53962f)), closes [#9](https://github.com/stuttgart-things/homerun2-s3-catcher/issues/9) [#9](https://github.com/stuttgart-things/homerun2-s3-catcher/issues/9)
+
 # [0.2.0](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.1.0...v0.2.0) (2026-11-13)
 
 
