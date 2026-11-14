@@ -130,11 +130,18 @@ Other formats (`inventory/v1`) and finding events (no `snapshot` tag) are archiv
 
 **Analysis.** The analysis gauges follow the inventory's listing of `ANALYSIS_BUCKET`: when a newer `analysis/…/<runId>.json` appears, it is read once.
 
-**Dashboard.** [`dashboards/fleet-health.json`](dashboards/fleet-health.json) ("Fleet health", uid `homerun-fleet-health`) with a `${datasource}` Prometheus variable, a `system` filter and `ui_url` (the s3-catcher UI, default `/archive`; set the full portal URL): analysis severity/open/new/resolved/age, open findings per system over time by severity, a table of systems with snapshot age (red over 3h) and open findings, archived messages and errors, consumer lag, analysis new vs. resolved, and links to the UI. As a Grafana sidecar ConfigMap (label `grafana_dashboard: "1"`):
+**Dashboard.** [`dashboards/fleet-health.json`](dashboards/fleet-health.json) ("Fleet health", uid `homerun-fleet-health`) with a `$datasource` Prometheus variable, a `system` filter and `ui_url` (the s3-catcher UI, from `${UI_URL:=/archive}`): analysis severity/open/new/resolved/age, open findings per system over time by severity, a table of systems with snapshot age (red over 3h) and open findings, archived messages and errors, consumer lag, analysis new vs. resolved, and links to the UI. As a Grafana sidecar ConfigMap (label `grafana_dashboard: "1"`):
 
 ```bash
 kubectl apply -n <grafana-namespace> -k dashboards/   # or a flux Kustomization, path ./dashboards, targetNamespace
 ```
+
+`ui_url` per cluster (#13): a Flux Kustomization sets it with
+`postBuild.substitute.UI_URL: https://portal.example.com/archive`. Without
+Flux the variable keeps the literal `${UI_URL:=/archive}` — replace it before
+applying. Grafana variables in the JSON are written `$name` (not `${name}`),
+so Flux's substitution leaves them alone; `dashboards/dashboard_test.go`
+checks that.
 
 ## Deployment
 

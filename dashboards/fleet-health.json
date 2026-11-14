@@ -24,7 +24,7 @@
     {
       "title": "Archive UI",
       "type": "link",
-      "url": "${ui_url}/",
+      "url": "$ui_url/",
       "targetBlank": true,
       "icon": "external link"
     }
@@ -48,7 +48,7 @@
         "type": "query",
         "datasource": {
           "type": "prometheus",
-          "uid": "${datasource}"
+          "uid": "$datasource"
         },
         "query": {
           "query": "label_values(homerun_snapshot_timestamp_seconds, system)",
@@ -76,10 +76,10 @@
         "name": "ui_url",
         "label": "Archive UI",
         "type": "textbox",
-        "query": "/archive",
+        "query": "${UI_URL:=/archive}",
         "current": {
-          "text": "/archive",
-          "value": "/archive"
+          "text": "${UI_URL:=/archive}",
+          "value": "${UI_URL:=/archive}"
         },
         "hide": 0,
         "options": []
@@ -93,7 +93,7 @@
       "title": "Analysis severity",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 0,
@@ -106,7 +106,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "max(homerun_analysis_severity{severity=\"info\"}) * 1 + max(homerun_analysis_severity{severity=\"warning\"}) * 2 + max(homerun_analysis_severity{severity=\"error\"}) * 3 + max(homerun_analysis_severity{severity=\"critical\"}) * 4",
           "legendFormat": "",
@@ -183,7 +183,7 @@
       "title": "Analysis: open findings",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 4,
@@ -196,7 +196,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "max(homerun_analysis_open_findings)",
           "legendFormat": "",
@@ -242,7 +242,7 @@
       "title": "Analysis: new findings",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 8,
@@ -255,7 +255,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "max(homerun_analysis_new_findings)",
           "legendFormat": "",
@@ -305,7 +305,7 @@
       "title": "Analysis: resolved",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 12,
@@ -318,7 +318,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "max(homerun_analysis_resolved_findings)",
           "legendFormat": "",
@@ -364,7 +364,7 @@
       "title": "Analysis age",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 16,
@@ -377,7 +377,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "time() - max(homerun_analysis_timestamp_seconds)",
           "legendFormat": "",
@@ -431,7 +431,7 @@
       "title": "Open findings (live snapshots)",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 20,
@@ -444,7 +444,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "sum(homerun_snapshot_open_findings{system=~\"$system\"})",
           "legendFormat": "",
@@ -494,7 +494,7 @@
       "title": "Open findings per system and severity",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 0,
@@ -507,7 +507,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "sum by (system, severity) (homerun_findings{system=~\"$system\"})",
           "legendFormat": "{{system}} {{severity}}",
@@ -626,7 +626,7 @@
       "title": "Archive",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 16,
@@ -637,7 +637,7 @@
       "targets": [],
       "options": {
         "mode": "markdown",
-        "content": "The archived JSON in S3 is the source of truth; these metrics are the latest snapshot per system.\n\n- [Archive UI](${ui_url}/)\n- [Uploads per system and day](${ui_url}/?tab=uploads)\n- [Latest objects](${ui_url}/?tab=objects)\n- [Cluster analyses](${ui_url}/?tab=analyses)\n\nSet the `ui_url` variable to the s3-catcher UI (e.g. `https://portal.example.com/archive`)."
+        "content": "The archived JSON in S3 is the source of truth; these metrics are the latest snapshot per system.\n\n- [Archive UI]($ui_url/)\n- [Uploads per system and day]($ui_url/?tab=uploads)\n- [Latest objects]($ui_url/?tab=objects)\n- [Cluster analyses]($ui_url/?tab=analyses)\n\n`ui_url` comes from Flux `postBuild.substitute.UI_URL` (default `/archive`)."
       }
     },
     {
@@ -646,7 +646,7 @@
       "title": "Systems: last snapshot",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 0,
@@ -659,7 +659,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "time() - max by (system, source, target) (homerun_snapshot_timestamp_seconds{system=~\"$system\"})",
           "legendFormat": "",
@@ -671,7 +671,7 @@
           "refId": "B",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "max by (system) (homerun_snapshot_open_findings{system=~\"$system\"})",
           "legendFormat": "",
@@ -683,7 +683,7 @@
           "refId": "C",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "max by (system) (homerun_snapshot_truncated_findings{system=~\"$system\"})",
           "legendFormat": "",
@@ -816,7 +816,7 @@
                 "value": [
                   {
                     "title": "Archive UI: uploads",
-                    "url": "${ui_url}/?tab=uploads",
+                    "url": "$ui_url/?tab=uploads",
                     "targetBlank": true
                   }
                 ]
@@ -835,7 +835,7 @@
       "title": "Archived messages per system",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 0,
@@ -848,7 +848,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "sum by (system) (rate(homerun_archived_messages_total[$__rate_interval]))",
           "legendFormat": "{{system}}",
@@ -858,7 +858,7 @@
           "refId": "B",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "sum by (stream) (rate(homerun_archive_errors_total[$__rate_interval]))",
           "legendFormat": "errors {{stream}}",
@@ -907,7 +907,7 @@
       "title": "Consumer lag",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 12,
@@ -920,7 +920,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "max by (stream) (homerun_consumer_lag_seconds)",
           "legendFormat": "lag {{stream}}",
@@ -930,7 +930,7 @@
           "refId": "B",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "max by (stream) (homerun_consumer_pending)",
           "legendFormat": "pending {{stream}}",
@@ -980,7 +980,7 @@
       "title": "Analysis: new vs. resolved",
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "$datasource"
       },
       "gridPos": {
         "x": 0,
@@ -993,7 +993,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "max(homerun_analysis_new_findings)",
           "legendFormat": "new",
@@ -1003,7 +1003,7 @@
           "refId": "B",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "max(homerun_analysis_resolved_findings)",
           "legendFormat": "resolved",
@@ -1013,7 +1013,7 @@
           "refId": "C",
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "$datasource"
           },
           "expr": "max(homerun_analysis_open_findings)",
           "legendFormat": "open",
