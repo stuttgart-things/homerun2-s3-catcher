@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 
 	"github.com/stuttgart-things/homerun2-s3-catcher/internal/catcher"
 	"github.com/stuttgart-things/homerun2-s3-catcher/internal/inventory"
@@ -186,7 +187,7 @@ func (u *UI) object(w http.ResponseWriter, r *http.Request) {
 
 // md renders the analyses' Markdown. goldmark's default renderer drops raw
 // HTML, so a report cannot inject markup into the page.
-var md = goldmark.New()
+var md = goldmark.New(goldmark.WithExtensions(extension.Table))
 
 func (u *UI) analysis(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
