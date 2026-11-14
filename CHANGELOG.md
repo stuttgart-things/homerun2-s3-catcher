@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.3.1...v0.4.0) (2026-11-14)
+
+
+### Features
+
+* **dashboards:** ui_url per cluster via Flux substitution ([#14](https://github.com/stuttgart-things/homerun2-s3-catcher/issues/14)) ([e686a33](https://github.com/stuttgart-things/homerun2-s3-catcher/commit/e686a332c6fea8bf334804c5b12a604ccb3a4290)), closes [#13](https://github.com/stuttgart-things/homerun2-s3-catcher/issues/13)
+
 ## [0.3.1](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.3.0...v0.3.1) (2026-11-14)
 
 
