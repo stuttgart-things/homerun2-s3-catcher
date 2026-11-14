@@ -8,7 +8,8 @@ require (
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/stuttgart-things/homerun-library/v4 v4.6.0
 	github.com/stuttgart-things/redisqueue v0.0.0-20230628084515-1d31f7874df7
-	github.com/yuin/goldmark v1.8.7
+	github.com/yuin/goldmark v1.4.13
+	github.com/yuin/goldmark/v2 v2.1.16
 )
 
 require (
