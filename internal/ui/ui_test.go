@@ -50,7 +50,7 @@ func newUI(t *testing.T, withAnalysis bool) http.Handler {
 		"system=flux/date=" + day + "/x.json": `{}`,
 	}}
 	an := store{objs: map[string]string{
-		"analysis/date=2026-11-13/run.md":   "# Daily\n\n<script>alert(1)</script>\n\n- one finding",
+		"analysis/date=2026-11-13/run.md":   "# Daily\n\n<script>alert(1)</script>\n\n- one finding\n\n| System | Offen |\n|---|---:|\n| a | 2 |\n",
 		"analysis/date=2026-11-13/run.json": `{"topics":[]}`,
 	}}
 	var anL inventory.Lister
@@ -109,6 +109,9 @@ func TestAnalysisMarkdownDropsRawHTML(t *testing.T) {
 	}
 	if strings.Contains(body, "<script>") {
 		t.Error("raw HTML from the report reached the page")
+	}
+	if !strings.Contains(body, "<table>") || !strings.Contains(body, "<td>a</td>") {
+		t.Errorf("GFM table not rendered: %s", body)
 	}
 }
 
