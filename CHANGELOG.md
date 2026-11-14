@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.3.0...v0.3.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **ui:** render Markdown tables in analyses ([#12](https://github.com/stuttgart-things/homerun2-s3-catcher/issues/12)) ([d64510a](https://github.com/stuttgart-things/homerun2-s3-catcher/commit/d64510ac8b0259088204e5ce4edb10754deaef37)), closes [homerun2-ai-pitcher#18](https://github.com/homerun2-ai-pitcher/issues/18)
+
 # [0.3.0](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.2.0...v0.3.0) (2026-11-14)
 
 
