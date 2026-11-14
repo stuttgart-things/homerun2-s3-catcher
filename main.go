@@ -108,7 +108,7 @@ func main() {
 	}
 
 	go serveHTTP(cfg.HealthPort, handlers.Mount(cfg.BasePath, web.Handler(), handlers.NewHealthHandler(
-		handlers.BuildInfo{Version: version, Commit: commit, Date: date}, stats, monitor), m.Handler()), cfg.BasePath)
+		handlers.BuildInfo{Version: version, Commit: commit, Date: date}, stats, monitor), m.Handler(), analysisMount(cfg, web)...), cfg.BasePath)
 	go rebuildMetrics(ctx, m, store)
 	go monitor.Run(ctx, cfg.LagInterval)
 	go inv.Run(ctx, cfg.InventoryInterval)
@@ -207,6 +207,17 @@ func s3Options(c config.S3Config) archive.S3Options {
 		Endpoint: c.Endpoint, Bucket: c.Bucket, Region: c.Region,
 		AccessKey: c.AccessKey, SecretKey: c.SecretKey, UseSSL: c.UseSSL, Insecure: c.Insecure,
 	}
+}
+
+// analysisMount serves the same UI a second time under ANALYSIS_BASE_PATH,
+// opening on the analyses: the portal's own Analysis entry.
+func analysisMount(cfg config.Config, web *ui.UI) []handlers.Prefixed {
+	if cfg.AnalysisBasePath == "" {
+		return nil
+	}
+	a := *web
+	a.BasePath, a.DefaultTab, a.Title = cfg.AnalysisBasePath, "analyses", "Analysis"
+	return []handlers.Prefixed{{Path: cfg.AnalysisBasePath, Handler: a.Handler()}}
 }
 
 func serveHTTP(port string, h http.Handler, basePath string) {

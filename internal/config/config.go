@@ -42,6 +42,10 @@ type Config struct {
 	// BasePath is the UI's URL prefix behind sthings-portal, e.g. /archive;
 	// empty serves it at the root. /health and /healthz stay at the root.
 	BasePath string
+	// AnalysisBasePath mounts the same UI a second time, opening on the
+	// Analyses tab and titled "Analysis" -- a second portal entry, e.g.
+	// /analysis. Empty: none.
+	AnalysisBasePath string
 	// Analysis is the optional bucket of the cluster-analysis reports, shown
 	// in the UI; its credentials default to the archive's.
 	Analysis S3Config
@@ -178,8 +182,16 @@ func loadUI(c *Config, getenv func(string) string) error {
 			return fmt.Errorf("invalid INVENTORY_DAYS %q: 1 to 90", v)
 		}
 	}
-	c.BasePath, err = ParseBasePath(getenv("BASE_PATH"))
-	return err
+	if c.BasePath, err = ParseBasePath(getenv("BASE_PATH")); err != nil {
+		return err
+	}
+	if c.AnalysisBasePath, err = ParseBasePath(getenv("ANALYSIS_BASE_PATH")); err != nil {
+		return fmt.Errorf("ANALYSIS_BASE_PATH: %w", err)
+	}
+	if c.AnalysisBasePath != "" && (c.AnalysisBasePath == c.BasePath || c.BasePath == "") {
+		return fmt.Errorf("ANALYSIS_BASE_PATH %q needs a different, non-empty BASE_PATH", c.AnalysisBasePath)
+	}
+	return nil
 }
 
 var basePathSegment = regexp.MustCompile(`^[A-Za-z0-9._~-]+$`)

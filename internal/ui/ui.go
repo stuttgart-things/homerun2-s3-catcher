@@ -56,6 +56,11 @@ type UI struct {
 	Archive  Getter
 	Analysis Getter // nil without an analysis bucket
 	Started  time.Time
+	// DefaultTab opens without ?tab= (default status); Title names the UI
+	// in the portal manifest (default Archive). The Analysis mount sets
+	// analyses and Analysis.
+	DefaultTab string
+	Title      string
 
 	tmpl *template.Template
 }
@@ -109,6 +114,9 @@ func (u *UI) index(w http.ResponseWriter, r *http.Request) {
 	}
 	if !valid {
 		active = tabStatus
+		if u.DefaultTab != "" {
+			active = u.DefaultTab
+		}
 	}
 	u.render(w, "index.html", map[string]any{
 		keyBasePath: u.BasePath, "Bucket": u.Bucket, "Tabs": u.tabs(), "Tab": active,
@@ -215,9 +223,13 @@ func (u *UI) analysis(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *UI) manifest(w http.ResponseWriter, _ *http.Request) {
+	title := u.Title
+	if title == "" {
+		title = "Archive"
+	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"name": "homerun2-s3-catcher", "title": "Archive", "version": u.Info.Version, "basePath": u.BasePath,
+		"name": "homerun2-s3-catcher", "title": title, "version": u.Info.Version, "basePath": u.BasePath,
 		"fragments": []map[string]any{{
 			"id": "status", "title": "Archive", "url": u.BasePath + "/ui/fragment/status", "refreshSeconds": 30,
 		}},

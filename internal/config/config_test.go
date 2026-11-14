@@ -104,3 +104,21 @@ func TestLoadUISettings(t *testing.T) {
 		}
 	}
 }
+
+func TestAnalysisBasePath(t *testing.T) {
+	base := map[string]string{"BASE_PATH": "/archive", "ANALYSIS_BASE_PATH": "/analysis/"}
+	var c Config
+	if err := loadUI(&c, func(k string) string { return base[k] }); err != nil || c.AnalysisBasePath != "/analysis" {
+		t.Errorf("%q %v", c.AnalysisBasePath, err)
+	}
+	for _, bad := range []map[string]string{
+		{"BASE_PATH": "/archive", "ANALYSIS_BASE_PATH": "/archive"},
+		{"ANALYSIS_BASE_PATH": "/analysis"},
+		{"BASE_PATH": "/archive", "ANALYSIS_BASE_PATH": "/../x"},
+	} {
+		var c Config
+		if err := loadUI(&c, func(k string) string { return bad[k] }); err == nil {
+			t.Errorf("%v accepted", bad)
+		}
+	}
+}

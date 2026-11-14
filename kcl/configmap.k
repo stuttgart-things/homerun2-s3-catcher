@@ -36,6 +36,8 @@ configMap = {
         HEALTH_PORT: str(config.healthPort)
         if config.basePath:
             BASE_PATH: config.basePath
+        if config.analysisBasePath:
+            ANALYSIS_BASE_PATH: config.analysisBasePath
         if config.analysisBucket:
             ANALYSIS_BUCKET: config.analysisBucket
         **config.extraEnvVars
