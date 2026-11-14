@@ -31,6 +31,7 @@ _systems = option("config.systems")
 _maxLag = option("config.maxLag")
 _healthPort = option("config.healthPort")
 _basePath = option("config.basePath")
+_analysisBasePath = option("config.analysisBasePath")
 _analysisBucket = option("config.analysisBucket")
 _serviceMonitorEnabled = option("config.serviceMonitorEnabled")
 _serviceMonitorInterval = option("config.serviceMonitorInterval")
@@ -87,6 +88,8 @@ config: schema.S3Catcher = schema.S3Catcher {
         healthPort = _healthPort
     if _basePath:
         basePath = _basePath
+    if _analysisBasePath:
+        analysisBasePath = _analysisBasePath
     if _analysisBucket:
         analysisBucket = _analysisBucket
     if _serviceMonitorEnabled != None:

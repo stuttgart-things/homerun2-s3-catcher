@@ -58,6 +58,9 @@ schema S3Catcher:
     # UI (#7): URL prefix behind sthings-portal, e.g. "/archive"; empty
     # serves it at the root. /health and /healthz stay at the root.
     basePath: str = ""
+    # The same UI a second time, opening on the Analyses tab and titled
+    # "Analysis" (a second portal entry), e.g. "/analysis"; needs basePath.
+    analysisBasePath: str = ""
     # Bucket of the cluster-analysis reports shown in the UI's Analyses tab;
     # empty hides them. Read with the archive's credentials.
     analysisBucket: str = ""

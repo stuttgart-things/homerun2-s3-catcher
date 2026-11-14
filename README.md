@@ -77,6 +77,7 @@ WHERE system = 'k8s-labda' AND date >= '2026-11-01';
 | `LAG_INTERVAL` | `1m` | |
 | `HEALTH_PORT` | `8080` | UI, `/healthz`, `/health` and `/metrics` |
 | `BASE_PATH` | *(root)* | UI prefix behind sthings-portal, e.g. `/archive`; `/health(z)` and `/metrics` stay at the root |
+| `ANALYSIS_BASE_PATH` | *(none)* | the same UI again under its own prefix, e.g. `/analysis`: opens on the Analyses tab, manifest title "Analysis" — a second portal entry (`analysis\|Analysis=http://homerun2-s3-catcher`). Needs `BASE_PATH` |
 | `ANALYSIS_BUCKET` | *(none)* | Bucket of the cluster-analysis reports (`analysis/…md/json`) for the Analyses tab and the `homerun_analysis_*` metrics |
 | `ANALYSIS_S3_ACCESS_KEY` / `ANALYSIS_S3_SECRET_KEY` | the archive's | Credentials for `ANALYSIS_BUCKET` |
 | `INVENTORY_INTERVAL` | `5m` | How often the UI lists the bucket (and the analysis metrics look for a newer report) |

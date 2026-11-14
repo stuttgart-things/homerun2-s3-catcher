@@ -158,3 +158,23 @@ func TestHumanBytes(t *testing.T) {
 		}
 	}
 }
+
+// The Analysis mount opens on the analyses and names itself in the manifest.
+func TestAnalysisMount(t *testing.T) {
+	inv := inventory.New(store{objs: map[string]string{}}, nil, 14)
+	u := &UI{BasePath: "/analysis", Stats: &catcher.Stats{}, Inv: inv, Started: time.Now(), DefaultTab: "analyses", Title: "Analysis",
+		Lag: fixedLag{}}
+	h := u.Handler()
+	if body := get(t, h, "/"); !strings.Contains(body, `hx-get="/analysis/ui/analyses"`) {
+		t.Errorf("index does not open on analyses: %s", body)
+	}
+	if body := get(t, h, "/?tab=status"); !strings.Contains(body, `hx-get="/analysis/ui/status"`) {
+		t.Error("explicit tab ignored")
+	}
+	if body := get(t, h, "/ui/manifest.json"); !strings.Contains(body, `"title":"Analysis"`) || !strings.Contains(body, `"basePath":"/analysis"`) {
+		t.Errorf("manifest %s", body)
+	}
+	if body := get(t, newUI(t, true), "/ui/manifest.json"); !strings.Contains(body, `"title":"Archive"`) {
+		t.Errorf("default title changed: %s", body)
+	}
+}
