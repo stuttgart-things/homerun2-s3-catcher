@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.4.0...v0.5.0) (2026-11-14)
+
+
+### Features
+
+* **ui:** ANALYSIS_BASE_PATH — the UI as its own Analysis entry ([#15](https://github.com/stuttgart-things/homerun2-s3-catcher/issues/15)) ([5c9f6cf](https://github.com/stuttgart-things/homerun2-s3-catcher/commit/5c9f6cf3cf3f3f0453c9508ac1723c353dc70156))
+
 # [0.4.0](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.3.1...v0.4.0) (2026-11-14)
 
 
