@@ -161,6 +161,15 @@ func TestApplyResets(t *testing.T) {
 	if n := testutil.CollectAndCount(m.snapshotAt); n != 2 {
 		t.Errorf("timestamp series %d", n)
 	}
+	if v := testutil.ToFloat64(m.open.WithLabelValues("endpoints-a", "endpoints", "a")); v != 0 {
+		t.Errorf("open findings of a clean system = %v, want 0", v)
+	}
+	if v := testutil.ToFloat64(m.open.WithLabelValues("endpoints-b", "endpoints", "b")); v != 1 {
+		t.Errorf("open findings of b = %v", v)
+	}
+	if n := testutil.CollectAndCount(m.open); n != 2 {
+		t.Errorf("open series %d, want one per system", n)
+	}
 }
 
 func TestArchivedAndHandler(t *testing.T) {
@@ -179,8 +188,9 @@ func TestArchivedAndHandler(t *testing.T) {
 		`homerun_archive_errors_total{stream="messages"} 1`,
 		`homerun_unarchived_messages_total{reason="skipped",stream="messages"} 1`,
 		`homerun_findings{kind="Certificate",severity="warning",source="endpoints",system="endpoints-platform-sthings",target="platform-sthings"} 2`,
+		`homerun_snapshot_open_findings{source="endpoints",system="endpoints-platform-sthings",target="platform-sthings"} 3`,
 		`homerun_snapshot_truncated_findings{source="endpoints",system="endpoints-platform-sthings",target="platform-sthings"} 2`,
-		`homerun_consumer_lag{stream="messages"} 0`,
+		`homerun_consumer_lag_seconds{stream="messages"} 0`,
 		`homerun_consumer_pending{stream="messages"} 4`,
 		`go_goroutines`,
 	} {

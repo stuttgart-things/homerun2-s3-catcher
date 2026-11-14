@@ -106,11 +106,12 @@ For homerun2-portal's overview it serves `/ui/manifest.json` with one fragment, 
 |---|---|---|
 | `homerun_findings` | `system`, `source`, `target`, `kind`, `severity` | Open findings in the system's latest snapshot |
 | `homerun_snapshot_timestamp_seconds` | `system`, `source`, `target` | Time of that snapshot; `time() - …` is its age |
+| `homerun_snapshot_open_findings` | `system`, `source`, `target` | Total open findings of that snapshot, 0 when clean |
 | `homerun_snapshot_truncated_findings` | `system`, `source`, `target` | Findings the source left out (`truncated`, payload limit) |
 | `homerun_archived_messages_total` | `stream`, `system` | Uploads |
 | `homerun_archive_errors_total` | `stream` | Failed attempts (JSON.GET or upload), delivered again |
 | `homerun_unarchived_messages_total` | `stream`, `reason` | Acknowledged without an upload: `skipped`, `missing`, `invalid` |
-| `homerun_consumer_lag` | `stream` | Seconds, age of the oldest unarchived entry (the lag monitor's last measurement) |
+| `homerun_consumer_lag_seconds` | `stream` | Age of the oldest unarchived entry (the lag monitor's last measurement) |
 | `homerun_consumer_pending` | `stream` | Delivered, not acknowledged |
 | `homerun_analysis_open_findings` / `_new_findings` / `_resolved_findings` | – | `stats` of the latest report in `ANALYSIS_BUCKET` |
 | `homerun_analysis_severity` | `severity` | 1 for the latest report's severity, 0 for the others |
@@ -123,7 +124,7 @@ Plus the Go and process collectors.
 - `findings/v1` (`{"format":"findings/v1","source":…,"target":…,"items":[{"kind","severity",…}]}`): counted per `kind` and `severity` (`info|warning|error|critical`, anything else `unknown`). Without `source`/`target` they are split from the system name `<source>-<target>`.
 - legacy K8sGPT (`{"count":n,"items":[{"fingerprint","object":<Result CR>}]}`): `kind` = `object.spec.kind`, severity `warning`, source `k8sgpt`, target = the system without `k8sgpt-`.
 
-Other formats (`inventory/v1`) and finding events (no `snapshot` tag) are archived but leave the gauges alone. A new snapshot replaces all series of its system, so resolved kinds disappear; an empty `items` leaves only the timestamp. An older snapshot than the one in the gauges (redelivery, backlog) is ignored.
+Other formats (`inventory/v1`) and finding events (no `snapshot` tag) are archived but leave the gauges alone. A new snapshot replaces all series of its system, so resolved kinds disappear; an empty `items` leaves no `homerun_findings` series, but `homerun_snapshot_open_findings` 0 and the timestamp. An older snapshot than the one in the gauges (redelivery, backlog) is ignored.
 
 **Restart.** At startup the gauges are rebuilt from the archive in the background: per `system=` prefix the newest object that is a snapshot, searched in the newest 2 `date=` partitions, newest object first, at most 25 GETs per system. This assumes the default key layout (`system=…/date=…/`).
 

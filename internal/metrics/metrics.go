@@ -40,6 +40,7 @@ type Metrics struct {
 	findings   *prometheus.GaugeVec
 	snapshotAt *prometheus.GaugeVec
 	truncated  *prometheus.GaugeVec
+	open       *prometheus.GaugeVec
 	archived   *prometheus.CounterVec
 	errors     *prometheus.CounterVec
 	unarchived *prometheus.CounterVec
@@ -68,6 +69,10 @@ func New(lagr LagReporter) *Metrics {
 		truncated: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace, Name: "snapshot_truncated_findings",
 			Help: "Findings the source left out of the latest snapshot to stay below the payload limit.",
+		}, []string{labelSystem, labelSource, labelTarget}),
+		open: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace, Name: "snapshot_open_findings",
+			Help: "Open findings in the latest snapshot of a system in total, 0 when clean.",
 		}, []string{labelSystem, labelSource, labelTarget}),
 		archived: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace, Name: "archived_messages_total",
@@ -105,7 +110,7 @@ func New(lagr LagReporter) *Metrics {
 	m.reg.MustRegister(
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
-		m.findings, m.snapshotAt, m.truncated, m.archived, m.errors, m.unarchived,
+		m.findings, m.snapshotAt, m.truncated, m.open, m.archived, m.errors, m.unarchived,
 		m.analysisOpen, m.analysisNew, m.analysisResolved, m.analysisAt, m.analysisSeverity,
 	)
 	if lagr != nil {
@@ -153,12 +158,14 @@ func (m *Metrics) Apply(s Snapshot) bool {
 	m.findings.DeletePartialMatch(match)
 	m.snapshotAt.DeletePartialMatch(match)
 	m.truncated.DeletePartialMatch(match)
+	m.open.DeletePartialMatch(match)
 
 	for k, n := range s.Counts {
 		m.findings.WithLabelValues(s.System, s.Source, s.Target, k.Kind, k.Severity).Set(float64(n))
 	}
 	m.snapshotAt.WithLabelValues(s.System, s.Source, s.Target).Set(float64(s.At.Unix()))
 	m.truncated.WithLabelValues(s.System, s.Source, s.Target).Set(float64(s.Truncated))
+	m.open.WithLabelValues(s.System, s.Source, s.Target).Set(float64(s.Open()))
 	slog.Debug("snapshot gauges updated", "system", s.System, "open", s.Open(), "at", s.At)
 	return true
 }
@@ -167,7 +174,7 @@ func (m *Metrics) Apply(s Snapshot) bool {
 type lagCollector struct{ lagr LagReporter }
 
 var (
-	lagDesc = prometheus.NewDesc(namespace+"_consumer_lag",
+	lagDesc = prometheus.NewDesc(namespace+"_consumer_lag_seconds",
 		"Age of the oldest unarchived entry of a stream in seconds (pending or not yet delivered).",
 		[]string{labelStream}, nil)
 	pendingDesc = prometheus.NewDesc(namespace+"_consumer_pending",

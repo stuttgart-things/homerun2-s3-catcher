@@ -446,7 +446,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(homerun_findings{system=~\"$system\"}) or vector(0)",
+          "expr": "sum(homerun_snapshot_open_findings{system=~\"$system\"})",
           "legendFormat": "",
           "format": "time_series",
           "instant": true,
@@ -673,7 +673,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (system) (homerun_findings{system=~\"$system\"}) or (max by (system) (homerun_snapshot_timestamp_seconds{system=~\"$system\"}) * 0)",
+          "expr": "max by (system) (homerun_snapshot_open_findings{system=~\"$system\"})",
           "legendFormat": "",
           "format": "table",
           "instant": true,
@@ -922,7 +922,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max by (stream) (homerun_consumer_lag)",
+          "expr": "max by (stream) (homerun_consumer_lag_seconds)",
           "legendFormat": "lag {{stream}}",
           "format": "time_series"
         },
