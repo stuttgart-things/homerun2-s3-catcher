@@ -22,7 +22,7 @@
   },
   "links": [
     {
-      "title": "Archive UI",
+      "title": "UI",
       "type": "link",
       "url": "$ui_url/",
       "targetBlank": true,
@@ -815,7 +815,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "Archive UI: uploads",
+                    "title": "UI: uploads",
                     "url": "$ui_url/?tab=uploads",
                     "targetBlank": true
                   }
