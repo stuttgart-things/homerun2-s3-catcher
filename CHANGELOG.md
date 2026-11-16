@@ -1,3 +1,10 @@
+## [0.6.1](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.6.0...v0.6.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* **dashboards:** link titles no longer say Archive ([#18](https://github.com/stuttgart-things/homerun2-s3-catcher/issues/18)) ([5ed584f](https://github.com/stuttgart-things/homerun2-s3-catcher/commit/5ed584fedf2c4943791a2b8fe92d05c79286c1e2)), closes [#16](https://github.com/stuttgart-things/homerun2-s3-catcher/issues/16)
+
 # [0.6.0](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.5.0...v0.6.0) (2026-11-16)
 
 
