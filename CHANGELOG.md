@@ -1,3 +1,10 @@
+# [0.6.0](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.5.0...v0.6.0) (2026-11-16)
+
+
+### Features
+
+* **ui:** UI_TITLE and ANALYSIS_UI_TITLE name the two mounts ([#16](https://github.com/stuttgart-things/homerun2-s3-catcher/issues/16)) ([075265a](https://github.com/stuttgart-things/homerun2-s3-catcher/commit/075265a7a07f4dbe5b71fe2dba42825e3f70c263)), closes [stuttgart-things/stuttgart-things#4680](https://github.com/stuttgart-things/stuttgart-things/issues/4680)
+
 # [0.5.0](https://github.com/stuttgart-things/homerun2-s3-catcher/compare/v0.4.0...v0.5.0) (2026-11-14)
 
 
