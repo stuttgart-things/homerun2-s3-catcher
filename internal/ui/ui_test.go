@@ -178,3 +178,25 @@ func TestAnalysisMount(t *testing.T) {
 		t.Errorf("default title changed: %s", body)
 	}
 }
+
+func TestTitle(t *testing.T) {
+	inv := inventory.New(store{objs: map[string]string{}}, nil, 14)
+	u := &UI{BasePath: "/fleet-data", Title: "Fleet Data", Bucket: "k8s-cluster-report", Stats: &catcher.Stats{}, Inv: inv,
+		Started: time.Now(), Lag: fixedLag{}}
+	h := u.Handler()
+	body := get(t, h, "/")
+	for _, want := range []string{"<title>HOMERUN² · Fleet Data</title>", `<div class="subtitle">Fleet Data · k8s-cluster-report</div>`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("index lacks %q", want)
+		}
+	}
+	if strings.Contains(body, "Archive") {
+		t.Error("index still says Archive")
+	}
+	if m := get(t, h, "/ui/manifest.json"); !strings.Contains(m, `"title":"Fleet Data"`) {
+		t.Errorf("manifest %s", m)
+	}
+	if body := get(t, newUI(t, true), "/"); !strings.Contains(body, "<title>HOMERUN² · Archive</title>") {
+		t.Error("default title changed")
+	}
+}

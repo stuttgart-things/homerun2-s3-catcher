@@ -122,3 +122,15 @@ func TestAnalysisBasePath(t *testing.T) {
 		}
 	}
 }
+
+func TestUITitles(t *testing.T) {
+	var c Config
+	if err := loadUI(&c, func(string) string { return "" }); err != nil || c.Title != "Archive" || c.AnalysisTitle != "Analysis" {
+		t.Errorf("defaults: %q %q %v", c.Title, c.AnalysisTitle, err)
+	}
+	set := map[string]string{"BASE_PATH": "/fleet-data", "ANALYSIS_BASE_PATH": "/fleet-analysis", "UI_TITLE": " Fleet Data ", "ANALYSIS_UI_TITLE": "Fleet Analysis"}
+	c = Config{}
+	if err := loadUI(&c, func(k string) string { return set[k] }); err != nil || c.Title != "Fleet Data" || c.AnalysisTitle != "Fleet Analysis" {
+		t.Errorf("set: %q %q %v", c.Title, c.AnalysisTitle, err)
+	}
+}

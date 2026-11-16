@@ -119,7 +119,7 @@ func (u *UI) index(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	u.render(w, "index.html", map[string]any{
-		keyBasePath: u.BasePath, "Bucket": u.Bucket, "Tabs": u.tabs(), "Tab": active,
+		keyBasePath: u.BasePath, "Title": u.title(), "Bucket": u.Bucket, "Tabs": u.tabs(), "Tab": active,
 		"Version": u.Info.Version, "Commit": u.Info.Commit, "Date": u.Info.Date,
 		// Through homerun2-portal (it sets X-Forwarded-Prefix): link its tokens.
 		"PortalTheme": r.Header.Get("X-Forwarded-Prefix") != "",
@@ -223,15 +223,12 @@ func (u *UI) analysis(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *UI) manifest(w http.ResponseWriter, _ *http.Request) {
-	title := u.Title
-	if title == "" {
-		title = "Archive"
-	}
+	title := u.title()
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"name": "homerun2-s3-catcher", "title": title, "version": u.Info.Version, "basePath": u.BasePath,
 		"fragments": []map[string]any{{
-			"id": "status", "title": "Archive", "url": u.BasePath + "/ui/fragment/status", "refreshSeconds": 30,
+			"id": "status", "title": title, "url": u.BasePath + "/ui/fragment/status", "refreshSeconds": 30,
 		}},
 	})
 }
@@ -287,4 +284,12 @@ func shortCommit(c string) string {
 		return c[:shortCommitLen]
 	}
 	return c
+}
+
+// title is the UI's name: Title, or "Archive" when unset.
+func (u *UI) title() string {
+	if u.Title == "" {
+		return "Archive"
+	}
+	return u.Title
 }

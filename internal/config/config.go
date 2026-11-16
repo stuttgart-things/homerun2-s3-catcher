@@ -46,6 +46,11 @@ type Config struct {
 	// Analyses tab and titled "Analysis" -- a second portal entry, e.g.
 	// /analysis. Empty: none.
 	AnalysisBasePath string
+	// Title names the UI (page title, header, portal manifest), default
+	// "Archive"; AnalysisTitle the second mount, default "Analysis"
+	// (UI_TITLE, ANALYSIS_UI_TITLE).
+	Title         string
+	AnalysisTitle string
 	// Analysis is the optional bucket of the cluster-analysis reports, shown
 	// in the UI; its credentials default to the archive's.
 	Analysis S3Config
@@ -190,6 +195,14 @@ func loadUI(c *Config, getenv func(string) string) error {
 	}
 	if c.AnalysisBasePath != "" && (c.AnalysisBasePath == c.BasePath || c.BasePath == "") {
 		return fmt.Errorf("ANALYSIS_BASE_PATH %q needs a different, non-empty BASE_PATH", c.AnalysisBasePath)
+	}
+	c.Title = strings.TrimSpace(getenv("UI_TITLE"))
+	if c.Title == "" {
+		c.Title = "Archive"
+	}
+	c.AnalysisTitle = strings.TrimSpace(getenv("ANALYSIS_UI_TITLE"))
+	if c.AnalysisTitle == "" {
+		c.AnalysisTitle = "Analysis"
 	}
 	return nil
 }
