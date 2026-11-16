@@ -90,7 +90,7 @@ func main() {
 	inv := inventory.New(store, analysisLister, cfg.InventoryDays)
 	watchAnalyses(inv, m, analysisStore)
 	web := &ui.UI{
-		BasePath: cfg.BasePath, Bucket: cfg.S3.Bucket, Info: ui.BuildInfo{Version: version, Commit: commit, Date: date},
+		BasePath: cfg.BasePath, Title: cfg.Title, Bucket: cfg.S3.Bucket, Info: ui.BuildInfo{Version: version, Commit: commit, Date: date},
 		Stats: stats, Lag: monitor, Inv: inv, Archive: store, Analysis: analysisGetter, Started: time.Now(),
 	}
 
@@ -210,13 +210,14 @@ func s3Options(c config.S3Config) archive.S3Options {
 }
 
 // analysisMount serves the same UI a second time under ANALYSIS_BASE_PATH,
-// opening on the analyses: the portal's own Analysis entry.
+// opening on the analyses and titled ANALYSIS_UI_TITLE: the portal's own
+// analysis entry.
 func analysisMount(cfg config.Config, web *ui.UI) []handlers.Prefixed {
 	if cfg.AnalysisBasePath == "" {
 		return nil
 	}
 	a := *web
-	a.BasePath, a.DefaultTab, a.Title = cfg.AnalysisBasePath, "analyses", "Analysis"
+	a.BasePath, a.DefaultTab, a.Title = cfg.AnalysisBasePath, "analyses", cfg.AnalysisTitle
 	return []handlers.Prefixed{{Path: cfg.AnalysisBasePath, Handler: a.Handler()}}
 }
 

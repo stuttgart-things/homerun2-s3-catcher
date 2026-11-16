@@ -61,6 +61,10 @@ schema S3Catcher:
     # The same UI a second time, opening on the Analyses tab and titled
     # "Analysis" (a second portal entry), e.g. "/analysis"; needs basePath.
     analysisBasePath: str = ""
+    # UI names (UI_TITLE, ANALYSIS_UI_TITLE): page title, header and the
+    # portal manifest. Empty: "Archive" / "Analysis".
+    uiTitle: str = ""
+    analysisUiTitle: str = ""
     # Bucket of the cluster-analysis reports shown in the UI's Analyses tab;
     # empty hides them. Read with the archive's credentials.
     analysisBucket: str = ""

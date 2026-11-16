@@ -38,6 +38,10 @@ configMap = {
             BASE_PATH: config.basePath
         if config.analysisBasePath:
             ANALYSIS_BASE_PATH: config.analysisBasePath
+        if config.uiTitle:
+            UI_TITLE: config.uiTitle
+        if config.analysisUiTitle:
+            ANALYSIS_UI_TITLE: config.analysisUiTitle
         if config.analysisBucket:
             ANALYSIS_BUCKET: config.analysisBucket
         **config.extraEnvVars

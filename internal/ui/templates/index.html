@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HOMERUN² · Archive</title>
+    <title>HOMERUN² · {{.Title}}</title>
     <script>
         // In homerun2-portal's iframe the portal shows the brand: compact header.
         if (window.self !== window.top) document.documentElement.classList.add('hr-embedded');
@@ -52,7 +52,7 @@
         <div>
             <a href="{{.BasePath}}/" style="text-decoration:none;color:inherit">
                 <h1>HOMERUN²</h1>
-                <div class="subtitle">Archive · {{.Bucket}}</div>
+                <div class="subtitle">{{.Title}} · {{.Bucket}}</div>
             </a>
         </div>
     </div>
