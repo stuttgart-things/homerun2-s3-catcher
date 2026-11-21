@@ -27,7 +27,7 @@ vars:
   TEST_REPORT_PATH: /tmp/test-report-{{ .PROJECT }}.txt
   TARGET_IMAGE_REPO: ghcr.io/{{ .ORGA_NAME }}/{{ .PROJECT }}
   DAGGER_KCL_MODULE: github.com/stuttgart-things/dagger/kcl@v0.138.0
-  DAGGER_K8S_DEPLOY_MODULE: github.com/stuttgart-things/blueprints/kubernetes-deployment@v3.11.1
+  DAGGER_K8S_DEPLOY_MODULE: github.com/stuttgart-things/blueprints/kubernetes-deployment@v3.12.2
   KUBECONFIG_PATH: ~/.kube/movie-scripts
   DEPLOY_NAMESPACE: homerun2
   KCL_SOURCE_DIR: kcl
